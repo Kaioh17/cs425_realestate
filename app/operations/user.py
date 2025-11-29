@@ -1,21 +1,22 @@
 from app.db.connect import get_db
 from sqlalchemy import text
+from . import renters, agent
 
-class user:
+class User:
     db_gen = get_db()
     db = next(db_gen)
 
     def get_user_():
         
         try:
-            user.select_all("SELECT * FROM users")
+            User.select_all("SELECT * FROM users")
 
             return
         except Exception as e:
             raise e
     def get_agents():
         try:
-            user.select_all("select * from users where role = 'agent'")
+            User.select_all("select * from users where role = 'agent'")
     
             return
         except Exception as e:
@@ -29,13 +30,19 @@ class user:
                 - and accepts basic sql query as strings 
             """
         stmt = text(query)
-        result = user.db.execute(stmt).fetchall()
-        user._print_all(result)
+        result = User.db.execute(stmt).fetchall()
+        User._print_all(result)
         
     def _print_all(result):
         for i in result:
             print(i, "\n")
+
+if __name__ == '__main__':
+    print('Who are you: \n - agent(A) \n - renter(R)')
+    answ = input('')
     
-        
-user.get_user_()
-user.get_agents()
+    match answ:
+        case 'R':
+            renters.Renter.cli()
+        case 'A':
+            agent.Agent.cli()
