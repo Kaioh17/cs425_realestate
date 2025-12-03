@@ -19,7 +19,10 @@
 
 ```
 python -m venv venv
-source venv/bin/activate
+for linux:
+  source venv/bin/activate
+for windows: 
+  venv\Scripts\activate.bat
 ```
 
 - Install dependencies:
