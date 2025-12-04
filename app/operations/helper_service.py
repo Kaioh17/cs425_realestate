@@ -20,7 +20,7 @@ class query_:
             
         rows = result.mappings().all()
         # self._print_all(result)
-        print(rows)
+        # print('Debug: {}'.format(rows))
         return rows
     def _insert(self, query, params: dict):
         
@@ -49,8 +49,9 @@ class query_:
             _Validators._ensure_query(query)
             sql_query = text(query)
             
-            response = self.db.execute(sql_query, param)
-            
+            self.db.execute(sql_query, param)
+            self.db.commit()
+            print('\nDelete Successfull🎊\n')
             return 
         
         except Exception as e:

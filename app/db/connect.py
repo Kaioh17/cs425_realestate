@@ -21,10 +21,10 @@ SessionLocal = sessionmaker(autocommit = False, autoflush = False, bind = engine
 Base = declarative_base()
 
 def get_db():#we create a dependency to create sesssion every time the fuction is called
-    print('connection started ')
+    # print('connection started ')
     db = SessionLocal()
     try:
-        print('connection successfull')
+        # print('connection successfull')
         yield db
     finally: 
         db.close()

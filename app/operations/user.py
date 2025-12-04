@@ -39,8 +39,7 @@ class User:
 
 if __name__ == '__main__':
     print('Who are you: \n - agent(A) \n - renter(R)')
-    answ = input('')
-    
+    answ = input('').capitalize()    
     match answ:
         case 'R':
             renters.Renter.cli()

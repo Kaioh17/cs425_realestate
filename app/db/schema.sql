@@ -168,7 +168,9 @@ COMMENT ON COLUMN reward_program.total_points IS 'derived from price total booki
 
 --TEST DATA
 
-
+-- Delete on cascade constraint 
+alter table credit_cards add constraint credit_cards_billing_address_id_fkey foreign key (b
+illing_address_id) references renter_addresses (id) on delete cascade;
 
 INSERT INTO users (role, first_name, last_name, email) VALUES ('agent','Add','Name', 'admintest@gmail.com'),
                                                               ('renter','Renter','Name', 'rentertest@gmail.com') ;

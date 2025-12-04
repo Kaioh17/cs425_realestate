@@ -1,6 +1,6 @@
 # CS425 Real Estate - README
-
 **Project Overview**
+
 - **Purpose**: A small real-estate demo project that connects to a PostgreSQL database and provides basic user/agent queries.
 - **Language**: Python
 - **DB**: PostgreSQL
@@ -15,20 +15,35 @@
     - `create_models.py` : (older style) script that uses `psycopg2` to create tables
 
 **Quick Setup**
+- If you do not have Python installed, install from [python.org](https://www.python.org/):
+  > version 3.10 or higher
 - Create and activate a virtual environment (recommended):
 
-```
+```bash
 python -m venv venv
-for linux:
-  source venv/bin/activate
-for windows: 
-  venv\Scripts\activate.bat
+```
+
+On Linux/macOS:
+```bash
+source venv/bin/activate
+```
+
+On Windows:
+```bash
+venv\Scripts\activate.bat
+```
 ```
 
 - Install dependencies:
 
-```
+On Linux/macOS:
+```bash
 pip install -r app/requirement.txt
+```
+
+On Windows:
+```bash
+pip install -r app\requirement.txt
 ```
 
 - Provide database credentials using environment variables (or a `.env` file in `app/db` or project root). The following variables are expected by `connect.py`:
@@ -51,16 +66,31 @@ DB_PORT=5432
 **How to Run (basic)**
 - Preferred: run as a module from the project root so package imports work correctly:
 
-```
+On Linux/macOS:
+```bash
 cd /home/kaioh/cs425_realestate
+python -m app.operations.user
+```
+
+On Windows:
+```bash
+cd path\to\cs425_realestate
 python -m app.operations.user
 ```
 
 - Alternative: run the script directly but set `PYTHONPATH` so `app` is importable:
 
-```
+On Linux/macOS:
+```bash
 cd /home/kaioh/cs425_realestate
 PYTHONPATH=$PWD python app/operations/user.py
+```
+
+On Windows:
+```bash
+cd path\to\cs425_realestate
+set PYTHONPATH=%cd%
+python app\operations\user.py
 ```
 
 Notes:

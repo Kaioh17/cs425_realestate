@@ -32,8 +32,8 @@ class Agent:
         agency = input("agency: ")
         contact_info = input("contact_info: ")
         
-        to_dict = {'user': {'role': role or 'agent',
-                    'first_name': first_name.capitalize() or 'James',
+        to_dict={'user': {'role': role or 'agent',
+                'first_name': first_name.capitalize() or 'James',
                 'last_name': last_name.capitalize() or 'Lucky',
                 'email': email or 'lucky@gmail.com'},
                 'agent': {'id': 0,
@@ -47,7 +47,7 @@ class Agent:
         
 
         # print("User: {} agent {}".format(to_dict['user'], to_dict['agent']))
-        sql = 'insert into users (role, first_name,last_name, email) values (:role, :first_name, :last_name, :email) returning id'
+        sql = 'insert into users (role, first_name, last_name, email) values (:role, :first_name, :last_name, :email) returning id'
         
         result = Agent.query._insert(query=sql, params=to_dict['user'])
         user_id = result.scalar()
@@ -66,14 +66,12 @@ class Agent:
         # password = input("password: ")
         
         sql = text('select * from users where email = :email') 
-        result = Agent.db.execute(sql,{'email':email})
+        result = Agent.db.execute(sql,{'email':email or 'test@dreamhomes.com'})
         
         result = result.fetchone()
     def get_agent():
         print('Agent detaisls for')
     def cli():
-        switch = input('You may begin: ')
-        # while switch == 'start':
         print("Hello there 🌟 Sign-in or create account: \n"
         "• Sign in (1)\n"
         "• Create an agent account (2)\n"
@@ -91,7 +89,9 @@ class Agent:
                 print('you have to login or create an account to proceed')
         while token_created == 'token':
             print('welcome back!!!')
-        
+            print('See all bookings[]')
+            print('create listings')
+            print('see clients') 
             status = input('enter (q) to quit: ')
             if status != 'q':
                 print('es')
