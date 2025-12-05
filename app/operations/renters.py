@@ -64,6 +64,7 @@ class Renter:
             print("\n" + "="*50)
             print("✅ CONGRATULATIONS ON JOINING OUR PLATFORM! 🎉")
             print("="*50 + "\n")
+            return
         except Exception as e:
             print('An error occured {e}')
             raise e
@@ -78,6 +79,14 @@ class Renter:
             sql = 'select * from users where email = :email'
             # result = Renter.db.execute(sql,{'email':email})
             result = Renter.query.select_all(sql, param={"email":email})
+            if len(result) == 0:
+                print('User does not exist..')
+                ans = input('Create Account: [y|n]: ').lower()
+                if ans == 'y':
+                    return Renter.create_renters()
+                else:
+                    print('no account!!!!')
+                    return  None
             # result = result.fetchone()
             # print(result)
             return result
@@ -93,17 +102,19 @@ class Renter:
             print("="*50)
             print("\n💰 Card Details:")
             card_number = input("  Card Number [34353435344]: ") or '34353435344'
-            card_type = input("  Card Type [Visa]: ") or 'Visa'
+            card_type = input("  Card Type [visa|master card]: ").lower() or 'visa'
             card_exp_month = int(input("  Exp. Month [08]: ") or 8)
             card_exp_year = int(input("  Exp. Year [2029]: ") or 2029)
             print("\n📍 Billing Address:")
             street = input("  Street [1234 S TestAddress]: ") or '1234 S TestAddress'
             city = input("  City [Chicago]: ") or 'Chicago'
-            state = input("  State [IL]: ") or 'IL'
+            state = input("  State [IL]: ").capitalize() or 'IL'
             zip = input("  Zip [60872]: ") or '60872'
-            """BEGIN TRANSACTION;
+            """
+                BEGIN TRANSACTION;
                     
-                    INSERT INTO Table2 (ColumnX, ColumnY) VALUES ('Value3', 'Value4');
+                    INSERT INTO  renter_addresses (renter_id, street, city, state, zip) VALUES (:renter_id, :street, :city, :state, :zip) returning id;
+                    INSERT INTO credit_cards (renter_id, card_number, card_type, billing_address_id, expiration_month, expiration_year) VALUES (:renter_id, :card_number, :card_type, :billing_address_id, :expiration_month, :expiration_year);
 
                 COMMIT TRANSACTION;
             """
@@ -119,25 +130,21 @@ class Renter:
                 INSERT INTO Table2 (ColumnX, ColumnY)
                 SELECT ColX, ColY FROM MoreNewData;"""
             # print(f'email {email}')
-            get_id_sql=text("select id from users where email = :email")
+            
             insert_ra_sql=text("INSERT INTO  renter_addresses (renter_id, street, city, state, zip) VALUES (:renter_id, :street, :city, :state, :zip) returning id")
             insert_cc_sql=text("INSERT INTO credit_cards (renter_id, card_number, card_type, billing_address_id, expiration_month, expiration_year) VALUES (:renter_id, :card_number, :card_type, :billing_address_id, :expiration_month, :expiration_year) ")
-            response = Renter.db.execute(get_id_sql,{'email': email})
-            response = response.mappings().all()
-            # print(response[0]['id'])
-            
-            renter_id = response[0]['id']
+        
             insert_response = Renter.db.execute(insert_ra_sql, {'renter_id':renter_id, 'street':street, 
                                                         'city': city, 'state': state, 'zip': zip})
             billing_address_id = insert_response.scalar()
-            print(billing_address_id)
+            # print(billing_address_id)
             Renter.db.execute(insert_cc_sql, {'renter_id':renter_id,'card_number':card_number,
                                                 'card_type':card_type, 'billing_address_id':billing_address_id, 
                                                 'expiration_month':card_exp_month,
                                                 'expiration_year': card_exp_year})
             Renter.db.commit()
             print(f"\n✅ Card {card_number} has been added successfully!\n")
-            return response
+            return 
         except Exception as e:
             print('An error occured {e}')
             raise e
@@ -149,9 +156,10 @@ class Renter:
             raise e
     def delete_address(email, renter_id):
         try:
-            sql = """select ra.id, ra.street,c.card_number, u.id as renter_id  from renter_addresses ra join users u on u.id = ra.renter_id 
-                    join credit_cards c on ra.id = c.billing_address_id where u.email = :email"""
-            response = Renter.query.select_all(query=sql, param={'email':email})
+            select_sql = """select ra.id, ra.street,c.card_number, ra.renter_id  from renter_addresses ra 
+                            join credit_cards c on ra.id = c.billing_address_id where ra.renter_id = :renter_id""" 
+                               
+            response = Renter.query.select_all(query=select_sql, param={'renter_id':renter_id})
             if len(response) == 0:
                 print("\n⚠️  No addresses available to delete.\n")
                 ans = input("Would you like to add a new card? [y/n]: ")
@@ -166,15 +174,15 @@ class Renter:
             print(df_from_list, "\n")
             to_delete = input("Enter ID(s) to delete [e.g., 1,2,3]: ").split(',')
             print(to_delete)
-            sql = 'delete from renter_addresses where id = :id and renter_id = :renter_id'
+            delete_sql = 'delete from renter_addresses where id = :id and renter_id = :renter_id'
             for i in range(len(to_delete)):
-                Renter.query._delete_by(query=sql,
+                Renter.query._delete_by(query=delete_sql,
                                         param={"id":int(to_delete[i]), 
                                             "renter_id": renter_id})
             print("\n✅ Address(es) deleted successfully!\n")
-            anse = input("Do you have more to delete? [y/n]: ")
-            if anse.lower() == 'y':
-                return Renter.delete_address(email=email)
+            ans = input("Do you have more to delete? [y/n]: ")
+            if ans.lower() == 'y':
+                return Renter.delete_address(renter_id=renter_id, email=email)
             else:
                 return
         except Exception as e:
@@ -319,6 +327,8 @@ class Renter:
                     case '1':
                         # print('feature coming up soon...')
                         response = Renter.signin()
+                        if response is None:
+                            return
                         email = response[0]['email']
                         # print(email)
                         
@@ -341,7 +351,7 @@ class Renter:
                 print("\n" + "="*50)
                 print("🏠  MAIN MENU")
                 print("="*50)
-                print("\n     Payment Management[1]")
+                print("\n    Payment Management[1]")
                 print("    Address Management[2]")
                 print("    Edit Profile[e]")
                 print("    Quit[q]")
@@ -386,7 +396,7 @@ class Renter:
                             case 'u':
                                 Renter.update_address(renter_id=renter_id, email=email)
                             case 'd':
-                                Renter.delete_address(email)                            
+                                Renter.delete_address(email, renter_id=renter_id)                            
                             case _:
                                 print("\n⬅️  Returning to main menu...\n")
         except Exception as e:
