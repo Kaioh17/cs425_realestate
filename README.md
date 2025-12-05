@@ -120,3 +120,4 @@ To create db and test data use `app/db/schema.sql` you can add more test data as
   - Implements `get_db()` as a generator that yields a session (intended for dependency injection or safe session handling).
 
 
+ 
