@@ -56,6 +56,18 @@ class query_:
         
         except Exception as e:
             raise e
+    def _update(self, query, param):
+        try:
+            _Validators._ensure_params(param)
+            _Validators._ensure_query(query)
+            
+            sql_query = text(query)
+            self.db.execute(sql_query, param)
+            self.db.commit()
+            print('\nUpdate successfull🎊\n')
+            return
+        except Exception as e:
+            raise e
     def _print_all(self, result):
         for i in result:
             print(i, "\n")

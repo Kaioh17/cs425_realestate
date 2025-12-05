@@ -16,6 +16,7 @@ from app.db.connect import get_db
 from sqlalchemy import text
 from . import helper_service
 from app.db.schemas import UserCreate, AgentCreate
+import pandas as pd 
 
 class Renter:
     db_gen = get_db()
@@ -24,24 +25,26 @@ class Renter:
     query = helper_service.query_(db)
     
     def create_renters():
-        print("Users Sign up page....")
-        print("you may begin....")
+        print("\n" + "="*50)
+        print("📝 RENTER REGISTRATION")
+        print("="*50)
+        print("\nLet's get you set up! 🚀\n")
         role = 'renter'
-        first_name = input("first_name: ")
-        last_name = input("last_name: ")
+        first_name = input("first_name[Terrel]: ") or 'Terrel'
+        last_name = input("last_name[Williams]: ") or 'Williams'
         email = input("email: ")
-        move_in_date = input("When do you plan on moving in?(2025-09-01 00:00:00): ")
-        preferred_location = input("preferred location: ")
-        budget = input("budget: ")
+        move_in_date = input("When do you plan on moving in?(2025-09-01 00:00:00): ")or '2025-09-01 00:00:00'
+        preferred_location = input("preferred location[Chicago, IL]: ")or 'Chicago, IL'
+        budget = input("budget[80090]: ")or '80090'
         
-        to_dict = {'user': {'role': role or 'renter',
-                    'first_name': first_name.capitalize() or 'Buddy',
-                'last_name': last_name.capitalize() or 'Baston',
-                'email': email or 'baston@gmail.com'},
+        to_dict = {'user': {'role': role,
+                    'first_name': first_name.capitalize(),
+                'last_name': last_name.capitalize(),
+                'email': email or 'terrel@gmail.com'},
                 'renter': {'id': 0,
-                            'move_in_date': move_in_date or '2025-09-01 00:00:00',
-                            'preferred_location': preferred_location or 'Chicago, IL',
-                            'budget': budget or '80090'}}
+                            'move_in_date': move_in_date ,
+                            'preferred_location': preferred_location ,
+                            'budget': budget }}
 
         
 
@@ -57,31 +60,38 @@ class Renter:
         
         Renter.query._insert(query=sql_agent, params=to_dict['renter'])
         
-        print('\n--------CONGRATULATIONS ON JOINING OUR PLATFORM🎉🎉🎉------------\n')
+        print("\n" + "="*50)
+        print("✅ CONGRATULATIONS ON JOINING OUR PLATFORM! 🎉")
+        print("="*50 + "\n")
     def signin():
-        print("You may begin login...")
-        email =input("email: ")  or 'terrel@gmail.com'
+        print("\n" + "="*50)
+        print("🔐 RENTER LOGIN")
+        print("="*50 + "\n")
+        email = input("📧 Email [terrel@gmail.com]: ") or 'terrel@gmail.com'
         # password = input("password: ")
         
-        sql = text('select * from users where email = :email') 
-        result = Renter.db.execute(sql,{'email':email})
-        
-        result = result.fetchone()
-        print(result)
-        return email
+        sql = 'select * from users where email = :email'
+        # result = Renter.db.execute(sql,{'email':email})
+        result = Renter.query.select_all(sql, param={"email":email})
+        # result = result.fetchone()
+        # print(result)
+        return result
     ###Address management
-    def add_card(email):
-        print('Add a card')
-        print('\nEnter card details>>>>>>')
-        card_number = input('Card number: ') or '34353435344'
-        card_type = input('Card type[Visa|MasterCard]: ') or 'visa'
-        card_exp_month = int(input('exp. Month: ') or 8)
-        card_exp_year = int(input('exp year: ') or 2029)
-        print('\nBilling Address>>>>')
-        street = input('street: ') or '1234 S TestAddress'
-        city = input('city: ') or 'Chicago'
-        state = input('state: ') or 'IL'
-        zip = input('zip: ') or '60872'
+    
+    def add_card(email, renter_id):
+        print("\n" + "="*50)
+        print("💳 ADD NEW CARD")
+        print("="*50)
+        print("\n💰 Card Details:")
+        card_number = input("  Card Number [34353435344]: ") or '34353435344'
+        card_type = input("  Card Type [Visa]: ") or 'Visa'
+        card_exp_month = int(input("  Exp. Month [08]: ") or 8)
+        card_exp_year = int(input("  Exp. Year [2029]: ") or 2029)
+        print("\n📍 Billing Address:")
+        street = input("  Street [1234 S TestAddress]: ") or '1234 S TestAddress'
+        city = input("  City [Chicago]: ") or 'Chicago'
+        state = input("  State [IL]: ") or 'IL'
+        zip = input("  Zip [60872]: ") or '60872'
         """BEGIN TRANSACTION;
                 
                 INSERT INTO Table2 (ColumnX, ColumnY) VALUES ('Value3', 'Value4');
@@ -117,82 +127,174 @@ class Renter:
                                             'expiration_month':card_exp_month,
                                             'expiration_year': card_exp_year})
         Renter.db.commit()
-        
-        # print(response)
-        print('\nYour card {} has been added successfully\n'.format(card_number))
+        print(f"\n✅ Card {card_number} has been added successfully!\n")
         return response
     def get_agent():
         print('renter  details for')
-    def delete_address(email):
+    def delete_address(email, renter_id):
         sql = """select ra.id, ra.street,c.card_number, u.id as renter_id  from renter_addresses ra join users u on u.id = ra.renter_id 
                 join credit_cards c on ra.id = c.billing_address_id where u.email = :email"""
-        # print(dict(email))
         response = Renter.query.select_all(query=sql, param={'email':email})
         if len(response) == 0:
-            print("You have no addresses left to delete->\n")
-            ans = input("would you like to add a new card?[y/n]: ")
+            print("\n⚠️  No addresses available to delete.\n")
+            ans = input("Would you like to add a new card? [y/n]: ")
             if ans.lower() == 'y':
-                Renter.add_card(email)
+                Renter.add_card(email, renter_id)
             return
-        print('what will you be deleting today:')
-        for i in range(len(response)):
-            print("id[{}] street[{}] card_no[{}] ".format(response[i]['id'],response[i]['street'], response[i]['card_number']))
-        # to_delete = list(tuple(input('id: [if more than one enter as "(1,2, 3)"]:'))) #
-        to_delete = input('id: [if delete more than one enter as "1,2,3"]: ').split(',')
+        print("\n" + "="*50)
+        print("🗑️  DELETE ADDRESS")
+        print("="*50)
+        print("\n📋 Your Addresses:\n")
+        df_from_list = pd.DataFrame(response)
+        print(df_from_list, "\n")
+        to_delete = input("Enter ID(s) to delete [e.g., 1,2,3]: ").split(',')
         print(to_delete)
         sql = 'delete from renter_addresses where id = :id and renter_id = :renter_id'
-        
-        
         for i in range(len(to_delete)):
             Renter.query._delete_by(query=sql,
                                     param={"id":int(to_delete[i]), 
-                                           "renter_id": response[0]['renter_id']})
-    def update_address(email):
-        """
-            UPDATE table_name
-            SET column1 = value1, column2 = value2, ...
-            WHERE condition;
-        """
-        'update renter_addresses set <> where '
-        pass 
-    def update_card(email):
-        pass  
-    def delete_card(email):
-        ##card_number or card_id?
-        print('What cards will you be deleting today?')
-        sql = 'select c.id, c.card_number, c.renter_id from credit_cards c join users u on u.id = c.renter_id where u.email = :email'
+                                           "renter_id": renter_id})
+        print("\n✅ Address(es) deleted successfully!\n")
+        anse = input("Do you have more to delete? [y/n]: ")
+        if anse.lower() == 'y':
+            return Renter.delete_address(email=email)
+        else:
+            return
+    def update_address(renter_id, email):
+        print("\n" + "="*50)
+        print("✏️  UPDATE ADDRESS")
+        print("="*50)
+        update_sql = 'update renter_addresses set street = :street, city = :city, state = :state, zip = :zip where id=:id '
+        select_sql = "select id as addr_id, street, city, state, zip from renter_addresses where renter_id = :renter_id"
+        current_resp = Renter.query.select_all(query=select_sql, param={"renter_id":renter_id})
+        if len(current_resp) == 0:
+            print("\n⚠️  No addresses available to update.\n")
+            ans = input("Would you like to add a new card? [y/n]: ")
+            if ans.lower() == 'y':
+                Renter.add_card(email, renter_id)
+            return
+        print("\n📋 Your Addresses:\n")
+        df_from_list = pd.DataFrame(current_resp)
+        print(df_from_list, "\n")
+        right = True
+        choice = int(input("Select address ID to update: "))
+        while right == True:
+            if choice not in df_from_list['addr_id'].to_list():
+                choice = int(input('❌ Invalid ID. Enter a valid ID: ')) 
+            else:
+                right = False
+                break
+        choice_index = df_from_list.index[df_from_list['addr_id'] == choice].to_list()
+        choice_index = choice_index[0]
+        
+        print("\n💡 Leave blank to keep current value:")
+        street = input(f"  Street (current: {current_resp[choice_index]['street']}): ") or current_resp[choice_index]['street']
+        city = input(f"  City (current: {current_resp[choice_index]['city']}): ") or current_resp[choice_index]['city']
+        state = input(f"  State (current: {current_resp[choice_index]['state']}): ") or current_resp[choice_index]['state']
+        zip = input(f"  Zip (current: {current_resp[choice_index]['zip']}): ") or current_resp[choice_index]['zip']
+    
+        Renter.query._update(query=update_sql, param={"street":street, "city":city,"state":state,"zip":zip, "id": choice})
+        print("\n✅ Address updated successfully!\n")
+        return 
+    ###card management
+    def update_card(renter_id, email):
+        try:
+            print("\n" + "="*50)
+            print("✏️  UPDATE CARD")
+            print("="*50)
+            update_sql = 'update credit_cards set card_number = :card_number, expiration_month = :expiration_month, expiration_year = :expiration_year where id=:id'
+            select_sql = "select id as card_id, card_number, card_type, expiration_month as exp_month, expiration_year as exp_year from credit_cards where renter_id = :renter_id"
+            current_resp = Renter.query.select_all(query=select_sql, param={"renter_id":renter_id})
+            if len(current_resp) == 0:
+                print("\n⚠️  No cards available to update.\n")
+                ans = input("Would you like to add a new card? [y/n]: ")
+                if ans.lower() == 'y':
+                    Renter.add_card(email, renter_id)
+                return
+            
+            print("\n📋 Your Cards:\n")
+            df_from_list = pd.DataFrame(current_resp)
+            print(df_from_list, "\n")
+            right = True
+            choice = int(input("Select card ID to update: "))
+            while right == True:
+                if choice not in df_from_list['card_id'].to_list():
+                    choice = int(input('❌ Invalid ID. Enter a valid ID: ')) 
+                else:
+                    right = False
+                    break
+            choice_index = df_from_list.index[df_from_list['card_id'] == choice].to_list()
+            choice_index = choice_index[0]
+            
+            print("\n💡 Leave blank to keep current value:")
+            card_number = input(f"  Card Number (current: {current_resp[choice_index]['card_number']}): ") or current_resp[choice_index]['card_number']
+            card_type = input(f"  Card Type (current: {current_resp[choice_index]['card_type']}): ") or current_resp[choice_index]['card_type']
+            exp_month = input(f"  Exp. Month (current: {current_resp[choice_index]['exp_month']}): ") or current_resp[choice_index]['exp_month']
+            exp_year = input(f"  Exp. Year (current: {current_resp[choice_index]['exp_year']}): ") or current_resp[choice_index]['exp_year']
+        
+            Renter.query._update(query=update_sql, param={"card_number":card_number, "card_type":card_type,"expiration_year":exp_year,"expiration_month":exp_month, "id": choice})
+            print("\n✅ Card updated successfully!\n")
+            return 
+        except Exception as e:
+            raise e
+    def delete_card(email, renter_id):
+        print("\n" + "="*50)
+        print("🗑️  DELETE CARD")
+        print("="*50)
+        sql = 'select c.id as card_id, c.card_number, c.renter_id, c.billing_address_id as bill_addr_id from credit_cards c join users u on u.id = c.renter_id where u.email = :email'
         response = Renter.query.select_all(query=sql, param={'email':email})
-        for i in range(len(response)):
-            print("id:{} card_no:{}".format(response[i]['id'], response[i]['card_number']))
-        card_id = input('Enter card id: ')
         
         if len(response) == 0:
-            print("You have no addresses left to delete->\n")
-            ans = input("would you like to add a new card?[y/n]: ")
+            print("\n⚠️  No cards available to delete.\n")
+            ans = input("Would you like to add a new card? [y/n]: ")
             if ans.lower() == 'y':
-                Renter.add_card(email)
+                Renter.add_card(email, renter_id)
             return
-            
-        renter_id = response[0]['renter_id']
-        print(f'Renter id: {renter_id}')
-        sql = 'delete from credit_cards where id = :id and renter_id = :renter_id'
-        Renter.query._delete_by(query=sql, param = {"id":int(card_id), "renter_id": int(renter_id)})
         
+        print("\n📋 Your Cards:\n")
+        df_from_list = pd.DataFrame(response)
+        print(df_from_list, "\n")
+        card_id = int(input('Enter card ID to delete: '))
+        
+        if card_id:
+            billing_addr_id = df_from_list.loc[df_from_list["card_id"] == card_id, 'bill_addr_id'].iloc[0]
+        # renter_id = response[0]['renter_id']
+        sql = 'delete from credit_cards where id = :id and renter_id = :renter_id'
+        Renter.query._delete_by(query=sql, param={"id":int(card_id), "renter_id": int(renter_id)})
+        sql = "delete from renter_addresses where id = :id and renter_id = :renter_id"
+        Renter.query._delete_by(query=sql, param={"id":int(billing_addr_id), "renter_id": int(renter_id)})
+        print("\n✅ Card and associated address deleted successfully!\n")
+        anse = input('Do you have more to delete? [y/n]: ')
+        if anse.lower() == 'y':
+            return Renter.delete_card(email=email)
+        else:
+            return
     def cli():
-        # while switch == 'start':
+        """
+        Interactive CLI for renter account management.
+        Stage 1: Authentication (sign in or create account)
+        Stage 2: Operations menu (payment, address, profile management)
+        Returns: None
+        """
+        
         b = True
         while b == True:
-            print("\n Hello there 🌟 Sign-in or create account: \n"
-            "• Sign in (1)\n"
-            "• Create an agent account (2)\n"
-            "type category below ⤵")
-            decision = input("")
+            #1️⃣2️⃣3️⃣4️⃣
+            print("\n" + "="*50)
+            print("👋 WELCOME TO RENTER PORTAL 🌟")
+            print("="*50)
+            print("\n   Sign In[1]")
+            print("   Create Account[2]")
+            print("\n" + "-"*50)
+            decision = input("\n Choose an option: ")
             match decision:
                 case '1':
                     # print('feature coming up soon...')
-                    email = Renter.signin()
-                    print(email)
+                    response = Renter.signin()
+                    email = response[0]['email']
+                    # print(email)
                     
+                    renter_id = response[0]['id']
                     token_created = 'token'
                     b=False
                 case '2': 
@@ -200,55 +302,65 @@ class Renter:
                     token_created = 'token'
                     b=False
                 case _:
-                    print('You have to login or create an account to proceed🚨❗❗\n')
+                    print('\n❌ Invalid choice. Please select 1 or 2.\n')
                     b = True
             
-        print(f'\nwelcome back {email}🌟\n')
+        print(f"\n{'='*50}")
+        print(f"👋 Welcome back, {email}! 🌟")
+        print(f"{'='*50}\n")
             
         while token_created == 'token':
-            print('• Edit profile(e)')
-            print('• Payment management[1]')
-            print('• Address management [2]')
-            print('• Select agent')
-            print('• See rewards')
-			##perform all operations in here 
-            print('• enter (q) to quit: ')
-            
-            
-            selection = input('')
+            print("\n" + "="*50)
+            print("🏠  MAIN MENU")
+            print("="*50)
+            print("\n     Payment Management[1]")
+            print("    Address Management[2]")
+            print("    Edit Profile[e]")
+            print("    Quit[q]")
+            print("\n" + "-"*50)
+            selection = input("\nChoose an option: ").lower()
             match selection:
                 case 'q':
-                    print('exiting:')
+                    print("\n✅ Thank you for using Renter Portal. Goodbye! 👋\n")
                     break
                 case 'e':
-                    print('Not built yet')
+                    print("\n🔄 Edit Profile feature coming soon...\n")
                     pass
                 case '1':
-                    print('\n------------Payment Management-----------\n')
-                    print('- Add new card[a]')
-                    print('- Update billing address[u]')
-                    print('- Delete card[d]')
-                    func = input('')
+                    print("\n" + "="*50)
+                    print("💳 PAYMENT MANAGEMENT")
+                    print("="*50)
+                    print("\n    Add New Card[a]")
+                    print("    Update Card[u]")
+                    print("    Delete Card[d]")
+                    print("    [ENTER] Go Back")
+                    print("\n" + "-"*50)
+                    func = input("\nChoose an option: ")
                     match func:
                         case 'a':
-                            Renter.add_card(email)
+                            Renter.add_card(email, renter_id)
                         case 'd':
-                            Renter.delete_card(email)
+                            Renter.delete_card(email, renter_id)
                         case 'u':
-                            Renter.update_card(email)
+                            Renter.update_card(renter_id=renter_id, email=email)
+                        case _:
+                            print("\n⬅️  Returning to main menu...\n")
                 case '2':
-                    print('\n------------Address Management_-----------')
-                    print('- Update billing address[u]')
-                    print('- Delete old address(note: Associated card will be deleted too)[d]')
-                    
-                    func = input('')
+                    print("\n" + "="*50)
+                    print("📍 ADDRESS MANAGEMENT")
+                    print("="*50)
+                    print("\n      Update Address[u]")
+                    print("     Delete Address (⚠️ Card will be deleted too)[d]")
+                    print("     [ENTER] Go Back")
+                    print("\n" + "-"*50)
+                    func = input("\nChoose an option: ").lower()
                     match func:
                         case 'u':
-                            Renter.update_address(email)
+                            Renter.update_address(renter_id=renter_id, email=email)
                         case 'd':
                             Renter.delete_address(email)                            
                         case _:
-                            print('Showing list again')
+                            print("\n⬅️  Returning to main menu...\n")
                     
 if __name__ == '__main__':
     Renter.cli()
