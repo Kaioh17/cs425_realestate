@@ -84,7 +84,7 @@ CREATE TABLE properties (
   location varchar(255) NOT NULL,
   state varchar(25) NOT NULL,
   city varchar(25) NOT NULL,
-  price NUMERIC(10, 2) NOT NULL,
+  price NUMERIC(10, 2) NOT NULL, -- sale value
   availability boolean NOT NULL,
   crime_rates varchar(20) NOT NULL,
   created_at timestamp DEFAULT now()
@@ -95,7 +95,7 @@ CREATE TABLE apartments (
   num_rooms int NOT NULL,
   sqr_footage float NOT NULL,
   building_type varchar(25)NOT NULL,
-  rental_price NUMERIC(10, 2) NOT NULL,
+  rental_price NUMERIC(10, 2) NOT NULL, 
   nearby_schools varchar,
   created_at timestamp DEFAULT now(),
   FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE
@@ -106,7 +106,7 @@ CREATE TABLE houses (
   num_rooms int NOT NULL,
   sqr_footage float NOT NULL,
   -- building_type varchar(25) NOT NULL,
-  price float NOT NULL,
+  -- price float NOT NULL, -- reason for change: redundant
   rental_price NUMERIC(10, 2) NOT NULL,
   houses_availability boolean NOT NULL,
   nearby_schools varchar NOT NULL,
@@ -214,9 +214,9 @@ INSERT INTO  renter_addresses (renter_id, street, city, state, zip) VALUES (4, '
 INSERT INTO credit_cards (renter_id, card_number, card_type, billing_address_id, expiration_month, expiration_year) VALUES (4, '15056415105421', 'visa', 1, 12, 2026);
 INSERT INTO agent_assigned (agent_id, renter_id) VALUES (3, 4);
 INSERT INTO properties (description, type, location, state, city, price, availability, crime_rates)  VALUES
-                      ('Modern 2-bedroom downtown apartment', 'apartments', '2344 Main St', 'IL', 'Chicago', 2200.00, TRUE, 'Low'),
-                      ('Baren land With dying weeds', 'Land', '123 Main St', 'IL', 'Chicago', 2200.00, TRUE, 'Low'),
-                      ('Modern 4-bedroom downtown apartment', 'commercial buildings', '4875 Prarie St', 'IL', 'Chicago', 2200.00, TRUE, 'High'),
+                      ('Modern 2-bedroom downtown apartment', 'apartments', '2344 Main St', 'IL', 'Chicago', 1222200.00, TRUE, 'Low'),
+                      ('Baren land With dying weeds', 'Land', '123 Main St', 'IL', 'Chicago', 222300.00, TRUE, 'Low'),
+                      ('Modern 4-bedroom downtown apartment', 'commercial buildings', '4875 Prarie St', 'IL', 'Chicago', 122200.00, TRUE, 'High'),
                       ('Perfect vacations home with a backyard pool', 'vacation homes', '123 Canem St', 'IL', 'Chicago', 2200.00, FALSE, 'High'),
                       ('Suburban 3-bedroom family home', 'houses', '4534 Elm Rd', 'IL', 'Naperville', 350000.00, TRUE, 'Medium');
 
@@ -225,7 +225,7 @@ INSERT INTO properties (description, type, location, state, city, price, availab
 
 INSERT INTO apartments (property_id, num_rooms, sqr_footage, building_type, rental_price, nearby_schools) VALUES (1, 2, 950.5, 'High-rise', 2200.00, 'South Loop Elementary');
 
-INSERT INTO houses (property_id, num_rooms, sqr_footage, price, rental_price, houses_availability, nearby_schools) VALUES (5, 3, 1800.0, 350000.00, 2500.00, TRUE, 'Naperville Central High');
+INSERT INTO houses (property_id, num_rooms, sqr_footage, rental_price, houses_availability, nearby_schools) VALUES (5, 3, 1800.0, 2500.00, TRUE, 'Naperville Central High');
 
 
 INSERT INTO land (property_id, sqr_footage) VALUES (2, 1456.21);
