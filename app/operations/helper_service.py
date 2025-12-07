@@ -1,15 +1,33 @@
-
+from tabulate import tabulate
 from app.db.connect import get_db
 from sqlalchemy import text
 
 class query_:
     def __init__(self, db):
+        """Initialize the query helper with a database connection.
+        
+        Args:
+            db: Database connection object from SQLAlchemy.
+        """
         self.db = db
     def select_all(self,query: str = None, param: str = None):
-        """This helper is used for select queries and execution:
-                - it prevents repetitive coding
-                - and accepts basic sql query as strings 
-            """
+        """Execute SELECT queries and return results as mappings.
+        
+        This helper method prevents repetitive coding and accepts SQL queries as strings.
+        Results are returned as a list of RowMapping objects that can be easily converted
+        to dictionaries or DataFrames.
+        
+        Args:
+            query (str): SQL SELECT query string. Can use named parameters (e.g., :param_name).
+            param (dict, optional): Dictionary of parameters for parameterized queries.
+                                   Defaults to None for queries without parameters.
+        
+        Returns:
+            list: List of RowMapping objects containing the query results.
+        
+        Raises:
+            ValueError: If query is None or empty.
+        """
         _Validators._ensure_query(query)
         stmt = text(query)
         
@@ -23,7 +41,20 @@ class query_:
         # print('Debug: {}'.format(rows))
         return rows
     def _insert(self, query, params: dict):
+        """Insert records into the database using a parameterized query.
         
+        Executes an INSERT query with the provided parameters and commits the transaction.
+        
+        Args:
+            query (str): SQL INSERT query string with named parameters (e.g., :param_name).
+            params (dict): Dictionary of parameters to bind to the query.
+        
+        Returns:
+            Result: SQLAlchemy Result object from the executed query.
+        
+        Raises:
+            ValueError: If query or params are None or empty.
+        """
         _Validators._ensure_params(params)
         _Validators._ensure_query(query)
         sql_query = text(query)
@@ -34,15 +65,22 @@ class query_:
         return result
     def _delete_by(self, query: str=None, 
                    param: any=None):
-        """
-            _delete_by: delete by params
-
+        """Delete records from the database matching the provided parameters.
+        
+        Executes a DELETE query with the provided parameters and commits the transaction.
+        Prints a success message upon completion.
+        
         Args:
-            query (str, optional): _description_. Defaults to None.
-            param (any, optional): _description_. Defaults to None.
-
+            query (str): SQL DELETE query string with named parameters (e.g., :param_name).
+            param (dict, optional): Dictionary of parameters to bind to the query.
+                                   Defaults to None.
+        
+        Returns:
+            None
+        
         Raises:
-            ValueError: _description_
+            ValueError: If query or param are None or empty.
+            Exception: Re-raises any exception that occurs during execution.
         """
         try:
             _Validators._ensure_params(param)
@@ -57,6 +95,22 @@ class query_:
         except Exception as e:
             raise e
     def _update(self, query, param):
+        """Update existing records in the database.
+        
+        Executes an UPDATE query with the provided parameters and commits the transaction.
+        Prints a success message upon completion.
+        
+        Args:
+            query (str): SQL UPDATE query string with named parameters (e.g., :param_name).
+            param (dict): Dictionary of parameters to bind to the query.
+        
+        Returns:
+            None
+        
+        Raises:
+            ValueError: If query or param are None or empty.
+            Exception: Re-raises any exception that occurs during execution.
+        """
         try:
             _Validators._ensure_params(param)
             _Validators._ensure_query(query)
@@ -69,14 +123,61 @@ class query_:
         except Exception as e:
             raise e
     def _print_all(self, result):
+        """Print all rows from a query result (debugging utility).
+        
+        Iterates through the result set and prints each row with a newline separator.
+        Useful for debugging and inspecting query results.
+        
+        Args:
+            result: SQLAlchemy Result object or iterable containing query results.
+        
+        Returns:
+            None
+        """
         for i in result:
             print(i, "\n")
              
 class _Validators:
     
     def _ensure_query(query):
+        """Validate that a query string is provided and not empty.
+        
+        Args:
+            query (str): SQL query string to validate.
+        
+        Raises:
+            ValueError: If query is None, empty, or evaluates to False.
+        """
         if not query:
             raise ValueError('Query parameter needs to be filled')
     def _ensure_params(param):
+        """Validate that parameters are provided and not empty.
+        
+        Args:
+            param (dict): Parameter dictionary to validate.
+        
+        Raises:
+            ValueError: If param is None, empty, or evaluates to False.
+        """
         if not param: 
             raise ValueError('Param is needed to filter search')
+        
+class _Display:
+    
+    def pretty_df(df, showindex: bool = False):
+        """Pretty-print a pandas DataFrame in PostgreSQL-style table format.
+        
+        Formats and displays a DataFrame using the tabulate library with a clean,
+        readable PostgreSQL-style table format. Useful for displaying query results
+        in the console.
+        
+        Args:
+            df (pd.DataFrame): The DataFrame to display.
+            showindex (bool, optional): Whether to show the DataFrame index.
+                                       Defaults to False.
+        
+        Returns:
+            None
+        """
+        print(tabulate(df, headers='keys', tablefmt='psql', showindex=showindex))
+        

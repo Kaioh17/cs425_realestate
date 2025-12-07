@@ -1,9 +1,15 @@
 from app.db.connect import get_db
 from sqlalchemy import text
 from . import helper_service
-from app.db.schemas import UserCreate, AgentCreate
 from .helper_service import query_
 import pandas as pd
+from tabulate import tabulate
+
+# NOTE: For useful database utilities and table printing helpers, refer to:
+# - helper_service.py for query_ class methods (select_all, _insert, _update, _delete_by)
+# - helper_service.md for documentation
+# - helper_service._Display.pretty_df() for formatting DataFrames as tables
+
 """
 ### 4.3 Search for Properties
 
@@ -18,7 +24,7 @@ class Properties:
         self.db_gen = db_gen    
         self.db = db
    
-    def filter_search(self, type,order_by = None, **filter):
+    def filter_search(self, type,rank=None,order_by = None, **filter):
         try:
             
             conditions = []
@@ -31,6 +37,10 @@ class Properties:
                 "apartments": "num_rooms, building_type,rental_price, sqr_footage, nearby_schools",
                 "land": "sqr_footage"
             }
+            rank_dict = {
+                "desc": " desc ",
+                "asc": " asc "
+            }
             for key, value in filter.items():
                 if value is not None:
                     conditions.append(f"{key} = :{key}")
@@ -40,12 +50,16 @@ class Properties:
             # print(where_filters)
             where_clause = f" where {where_filters}" 
             # print(where_clause)
+            # order = 'desc_asc'
+            print(order_by)
             
-            order_clause = ", ".join(order_by) if order_by else ""
+            # print("rank",desc_asc)
+            order_clause = f", ".join(order_by) if order_by else ""
             order_stmt = f" order by {order_clause}" if order_by else ""
             # TODO add asc and desc order
             select_sql = f"select price,{display[type]}, type ,description from properties join {type} on {type}.property_id = properties.id {where_clause} {order_stmt}"
-            
+            print(select_sql)
+            # return
             resp = query_(db=self.db).select_all(query=select_sql, param=params)
             df = pd.DataFrame(resp)
             
@@ -57,7 +71,8 @@ class Properties:
                 print("\n  No properties found matching your criteria.\n")
             else:
                 print(f"\n  Found {len(df)} property/properties:\n")
-                print(df.to_string(index=False))
+                # print(tabulate(df, headers='keys', tablefmt='psql', showindex=False))
+                helper_service._Display.pretty_df(df=df, showindex=False)
                 print()
             print("="*80 + "\n")
         except Exception as e:
@@ -65,6 +80,10 @@ class Properties:
         
     def filter_prints(self):
         try:
+            rank_dict = {
+                "desc": " desc",
+                "asc": " asc"
+            }
             order_by = []
             no_rent = ['vacation_homes', 'land']
             no_bed = ['land','commercial_buildings']
@@ -97,20 +116,28 @@ class Properties:
             # if type not in no_bed:
             num_rooms = input('  Sort by Number of Bedrooms? [T|F]: ').upper() or 'F' if type not in no_bed else 'F'
             # print(f"{num_rooms}, {sale_value}, {rental_price}")
+            rank_type = input('  Sort order (ascending/descending)? [asc/desc|no]: ')
+            while rank_type not in ['asc', 'desc', 'no']:
+                rank_type = input('  Enter a valid sort order [asc/desc|no]: ')
+                
+            # if rank_type:
+            if rank_type == 'desc' or rank_type == 'asc':
+                desc_asc = rank_dict[rank_type] 
+                
             
             if sale_value == 'T':
-                order_by.append("price")
+                order_by.append("price") if rank_type == 'no' else order_by.append(f"price{desc_asc}")
             if rental_price == 'T':
-                order_by.append("rental_price")
+                order_by.append("rental_price") if rank_type == 'no' else order_by.append(f"rental_price{desc_asc}")
             if num_rooms == 'T':
-                order_by.append("num_rooms")
+                order_by.append("num_rooms") if rank_type == 'no' else order_by.append(f"num_rooms{desc_asc}")
             
             if order_by:
                 print(f"\n  ✓ Results will be sorted by: {', '.join(order_by).replace('_', ' ').title()}")
             print()
             
                 
-            self.filter_search(order_by=order_by,type=type, location=location)
+            self.filter_search(rank=rank_type, order_by=order_by,type=type, location=location)
         except Exception as e:
             raise e
     def cli(self, role):

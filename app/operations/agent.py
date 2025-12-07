@@ -7,14 +7,17 @@ Responsibilities:
 - Validate agent ownership and enforce agent-specific business rules.
 """
 
-# Implementation notes:
-# - Use DB models for Property and Booking.
-# - Ensure actions check the agent's `user_id`/role before modifying data.
+
+
+# NOTE: For useful database utilities and table printing helpers, refer to:
+# - helper_service.py for query_ class methods (select_all, _insert, _update, _delete_by)
+# - helper_service.md for documentation
+# - helper_service._Display.pretty_df() for formatting DataFrames as tables
 
 from app.db.connect import get_db
 from sqlalchemy import text
 from . import helper_service
-from app.db.schemas import UserCreate, AgentCreate
+
 
 class Agent:
     db_gen = get_db()

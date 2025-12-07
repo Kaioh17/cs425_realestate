@@ -2,6 +2,11 @@ from app.db.connect import get_db
 from sqlalchemy import text
 from . import renters, agent
 
+# NOTE: For useful database utilities and table printing helpers, refer to:
+# - helper_service.py for query_ class methods (select_all, _insert, _update, _delete_by)
+# - helper_service.md for documentation
+# - helper_service._Display.pretty_df() for formatting DataFrames as tables
+
 class User:
     db_gen = get_db()
     db = next(db_gen)

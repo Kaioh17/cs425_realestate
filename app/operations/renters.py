@@ -8,14 +8,16 @@ Responsibilities:
 - Allow renters to view and cancel their bookings.
 """
 
-# Implementation notes:
-# - Use secure storage for payment metadata (do not store raw card numbers).
-# - Validate address/payment relationships before delete operations.
+ 
+
+# NOTE: For useful database utilities and table printing helpers, refer to:
+# - helper_service.py for query_ class methods (select_all, _insert, _update, _delete_by)
+# - helper_service.md for documentation
+# - helper_service._Display.pretty_df() for formatting DataFrames as tables
 
 from app.db.connect import get_db
 from sqlalchemy import text
 from . import helper_service
-from app.db.schemas import UserCreate, AgentCreate
 import pandas as pd 
 from .properties import Properties
 
@@ -176,8 +178,9 @@ class Renter:
             print(" " * 30 + "🗑️  DELETE ADDRESS")
             print("="*80)
             print("\n  📋 Your Addresses:\n")
-            df_from_list = pd.DataFrame(response)
-            print("  " + df_from_list.to_string(index=False).replace('\n', '\n  '))
+            df = pd.DataFrame(response)
+            # print("  " + df.to_string(index=False).replace('\n', '\n  '))
+            helper_service._Display.pretty_df(df=df, showindex=False)
             print()
             to_delete = input("  Enter ID(s) to delete (comma-separated, e.g., 1,2,3): ").split(',')
             delete_sql = 'delete from renter_addresses where id = :id and renter_id = :renter_id'
@@ -209,18 +212,19 @@ class Renter:
                     Renter.add_card(email, renter_id)
                 return
             print("\n  📋 Your Addresses:\n")
-            df_from_list = pd.DataFrame(current_resp)
-            print("  " + df_from_list.to_string(index=False).replace('\n', '\n  '))
+            df = pd.DataFrame(current_resp)
+            # print("  " + df.to_string(index=False).replace('\n', '\n  '))
+            helper_service._Display.pretty_df(df=df, showindex=False)
             print()
             right = True
             choice = int(input("  Select address ID to update: "))
             while right == True:
-                if choice not in df_from_list['addr_id'].to_list():
+                if choice not in df['addr_id'].to_list():
                     choice = int(input('  ❌ Invalid ID. Please enter a valid address ID: ')) 
                 else:
                     right = False
                     break
-            choice_index = df_from_list.index[df_from_list['addr_id'] == choice].to_list()
+            choice_index = df.index[df['addr_id'] == choice].to_list()
             choice_index = choice_index[0]
             
             print("\n  💡 Leave blank to keep current value:\n")
@@ -252,18 +256,19 @@ class Renter:
                 return
             
             print("\n  📋 Your Cards:\n")
-            df_from_list = pd.DataFrame(current_resp)
-            print("  " + df_from_list.to_string(index=False).replace('\n', '\n  '))
+            df = pd.DataFrame(current_resp)
+            # print("  " + df.to_string(index=False).replace('\n', '\n  '))
+            helper_service._Display.pretty_df(df=df, showindex=False)
             print()
             right = True
             choice = int(input("  Select card ID to update: "))
             while right == True:
-                if choice not in df_from_list['card_id'].to_list():
+                if choice not in df['card_id'].to_list():
                     choice = int(input('  ❌ Invalid ID. Please enter a valid card ID: ')) 
                 else:
                     right = False
                     break
-            choice_index = df_from_list.index[df_from_list['card_id'] == choice].to_list()
+            choice_index = df.index[df['card_id'] == choice].to_list()
             choice_index = choice_index[0]
             
             print("\n  💡 Leave blank to keep current value:\n")
@@ -294,13 +299,14 @@ class Renter:
                 return
             
             print("\n  📋 Your Cards:\n")
-            df_from_list = pd.DataFrame(response)
-            print("  " + df_from_list.to_string(index=False).replace('\n', '\n  '))
+            df = pd.DataFrame(response)
+            # print("  " + df_from_list.to_string(index=False).replace('\n', '\n  '))
+            helper_service._Display.pretty_df(df=df, showindex=False)
             print()
             card_id = int(input('  Enter card ID to delete: '))
             
             if card_id:
-                billing_addr_id = df_from_list.loc[df_from_list["card_id"] == card_id, 'bill_addr_id'].iloc[0]
+                billing_addr_id = df.loc[df["card_id"] == card_id, 'bill_addr_id'].iloc[0]
             # renter_id = response[0]['renter_id']
             sql = 'delete from credit_cards where id = :id and renter_id = :renter_id'
             Renter.query._delete_by(query=sql, param={"id":int(card_id), "renter_id": int(renter_id)})

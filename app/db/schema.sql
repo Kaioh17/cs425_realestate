@@ -1,8 +1,16 @@
-
---  To delete all tables --
+-- psql -U postgres -h localhost
+-- To create database:
+-- CREATE DATABASE realestate;
+-- To delete database:
+-- DROP DATABASE realestate;
+-- To delete all tables:
 --  DROP SCHEMA public CASCADE;
 --  CREATE SCHEMA public;
 
+--  To delete properties table and all child tables --
+--  (recommended - drops all dependent tables automatically)
+--  DROP TABLE IF EXISTS <table_name> CASCADE;
+-- to create tables:
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
   role VARCHAR(20) NOT NULL, CHECK (role IN  ('agent', 'renter')),
@@ -76,6 +84,8 @@ CREATE TABLE agent_assigned (
   FOREIGN KEY (agent_id) REFERENCES agents_profile(id) ON DELETE SET DEFAULT,
   FOREIGN key (renter_id) REFERENCES renters_profile(id) ON DELETE SET DEFAULT
 );
+
+
 
 CREATE TABLE properties (
   id SERIAL PRIMARY KEY,
@@ -213,24 +223,78 @@ INSERT INTO agents_profile (id, job_title, agency, contact_info) VALUES (3, 'Rea
 INSERT INTO  renter_addresses (renter_id, street, city, state, zip) VALUES (4, '123 State Street', 'Chicago', 'IL', '60616');
 INSERT INTO credit_cards (renter_id, card_number, card_type, billing_address_id, expiration_month, expiration_year) VALUES (4, '15056415105421', 'visa', 1, 12, 2026);
 INSERT INTO agent_assigned (agent_id, renter_id) VALUES (3, 4);
-INSERT INTO properties (description, type, location, state, city, price, availability, crime_rates)  VALUES
-                      ('Modern 2-bedroom downtown apartment', 'apartments', '2344 Main St', 'IL', 'Chicago', 1222200.00, TRUE, 'Low'),
-                      ('Baren land With dying weeds', 'Land', '123 Main St', 'IL', 'Chicago', 222300.00, TRUE, 'Low'),
-                      ('Modern 4-bedroom downtown apartment', 'commercial buildings', '4875 Prarie St', 'IL', 'Chicago', 122200.00, TRUE, 'High'),
-                      ('Perfect vacations home with a backyard pool', 'vacation homes', '123 Canem St', 'IL', 'Chicago', 2200.00, FALSE, 'High'),
-                      ('Suburban 3-bedroom family home', 'houses', '4534 Elm Rd', 'IL', 'Naperville', 350000.00, TRUE, 'Medium');
+-- Properties: 5 apartments (1-5), 5 houses (6-10), 5 commercial buildings (11-15), 5 vacation homes (16-20), 5 land (21-25)
+INSERT INTO properties (description, type, location, state, city, price, availability, crime_rates) VALUES
+-- Apartments (property_id 1-5)
+('Modern 2-bedroom downtown apartment', 'apartments', '2344 Main St', 'IL', 'Chicago', 1222200.00, TRUE, 'Low'),
+('Luxury 1-bedroom studio with city views', 'apartments', '5678 Lake Shore Dr', 'IL', 'Chicago', 850000.00, TRUE, 'Low'),
+('Spacious 3-bedroom apartment near parks', 'apartments', '1234 Oak Ave', 'IL', 'Evanston', 950000.00, TRUE, 'Low'),
+('Cozy 1-bedroom apartment in historic building', 'apartments', '7890 Elm St', 'IL', 'Chicago', 650000.00, FALSE, 'Medium'),
+('Modern 4-bedroom penthouse with balcony', 'apartments', '4567 Michigan Ave', 'IL', 'Chicago', 1850000.00, TRUE, 'Low'),
+-- Houses (property_id 6-10)
+('Suburban 3-bedroom family home', 'houses', '4534 Elm Rd', 'IL', 'Naperville', 350000.00, TRUE, 'Medium'),
+('Charming 4-bedroom Victorian house', 'houses', '2345 Maple Dr', 'IL', 'Oak Park', 425000.00, TRUE, 'Low'),
+('Modern 5-bedroom new construction', 'houses', '6789 Pine St', 'IL', 'Schaumburg', 550000.00, TRUE, 'Low'),
+('Classic 3-bedroom ranch style home', 'houses', '3456 Cedar Ln', 'IL', 'Aurora', 280000.00, FALSE, 'Medium'),
+('Luxury 6-bedroom estate with pool', 'houses', '8901 River Rd', 'IL', 'Winnetka', 1200000.00, TRUE, 'Low'),
+-- Commercial Buildings (property_id 11-15)
+('Prime retail space in downtown', 'commercial_buildings', '4875 Prairie St', 'IL', 'Chicago', 122200.00, TRUE, 'High'),
+('Office building with parking garage', 'commercial_buildings', '1234 Business Blvd', 'IL', 'Chicago', 2500000.00, TRUE, 'Medium'),
+('Restaurant space in busy district', 'commercial_buildings', '5678 Commerce Ave', 'IL', 'Chicago', 850000.00, TRUE, 'Medium'),
+('Warehouse facility with loading docks', 'commercial_buildings', '9012 Industrial Way', 'IL', 'Elk Grove', 1800000.00, TRUE, 'Low'),
+('Medical office building near hospital', 'commercial_buildings', '3456 Health Dr', 'IL', 'Chicago', 2100000.00, FALSE, 'Low'),
+-- Vacation Homes (property_id 16-20)
+('Perfect vacation home with backyard pool', 'vacation_homes', '123 Canem St', 'IL', 'Chicago', 2200.00, FALSE, 'High'),
+('Lakeside cabin with private dock', 'vacation_homes', '789 Lake View Dr', 'IL', 'Lake Forest', 450000.00, TRUE, 'Low'),
+('Mountain retreat with scenic views', 'vacation_homes', '2345 Hilltop Rd', 'IL', 'Galena', 380000.00, TRUE, 'Low'),
+('Beachfront cottage near the shore', 'vacation_homes', '5678 Shoreline Ave', 'IL', 'Waukegan', 520000.00, TRUE, 'Medium'),
+('Rustic log cabin in the woods', 'vacation_homes', '9012 Forest Trail', 'IL', 'Barrington', 320000.00, FALSE, 'Low'),
+-- Land (property_id 21-25)
+('Bare land with dying weeds', 'land', '123 Main St', 'IL', 'Chicago', 222300.00, TRUE, 'Low'),
+('Prime development lot in suburbs', 'land', '4567 Development Way', 'IL', 'Naperville', 150000.00, TRUE, 'Low'),
+('Wooded acreage for building', 'land', '7890 Timber Ln', 'IL', 'Crystal Lake', 95000.00, TRUE, 'Low'),
+('Corner lot in residential area', 'land', '2345 Corner St', 'IL', 'Schaumburg', 180000.00, FALSE, 'Medium'),
+('Large rural parcel with road access', 'land', '5678 Country Rd', 'IL', 'Joliet', 125000.00, TRUE, 'Low');
 
+-- Apartments data (property_id 1-5)
+INSERT INTO apartments (property_id, num_rooms, sqr_footage, building_type, rental_price, nearby_schools) VALUES
+(1, 2, 950.5, 'High-rise', 2200.00, 'South Loop Elementary'),
+(2, 1, 650.0, 'High-rise', 1800.00, 'Lincoln Park Elementary'),
+(3, 3, 1200.0, 'Mid-rise', 2800.00, 'Evanston Central School'),
+(4, 1, 550.0, 'Historic', 1500.00, 'Old Town Academy'),
+(5, 4, 1800.0, 'Luxury High-rise', 4500.00, 'Magnificent Mile Prep');
 
+-- Houses data (property_id 6-10)
+INSERT INTO houses (property_id, num_rooms, sqr_footage, rental_price, houses_availability, nearby_schools) VALUES
+(6, 3, 1800.0, 2500.00, TRUE, 'Naperville Central High'),
+(7, 4, 2200.0, 3200.00, TRUE, 'Oak Park Elementary'),
+(8, 5, 2800.0, 4200.00, TRUE, 'Schaumburg High School'),
+(9, 3, 1600.0, 2200.00, FALSE, 'Aurora Middle School'),
+(10, 6, 3500.0, 6500.00, TRUE, 'Winnetka Academy');
 
+-- Commercial Buildings data (property_id 11-15)
+INSERT INTO commercial_buildings (property_id, sqr_footage, type_of_business, rental_price) VALUES
+(11, 1456.21, 'Retail & Shopping', 2023.23),
+(12, 5000.0, 'Office Space', 8500.00),
+(13, 2500.0, 'Restaurant & Dining', 4500.00),
+(14, 8000.0, 'Warehouse & Storage', 12000.00),
+(15, 3500.0, 'Medical & Healthcare', 6500.00);
 
-INSERT INTO apartments (property_id, num_rooms, sqr_footage, building_type, rental_price, nearby_schools) VALUES (1, 2, 950.5, 'High-rise', 2200.00, 'South Loop Elementary');
+-- Vacation Homes data (property_id 16-20)
+INSERT INTO vacation_homes (property_id, num_rooms, sqr_footage) VALUES
+(16, 3, 1500.0),
+(17, 4, 2000.0),
+(18, 3, 1800.0),
+(19, 5, 2400.0),
+(20, 2, 1200.0);
 
-INSERT INTO houses (property_id, num_rooms, sqr_footage, rental_price, houses_availability, nearby_schools) VALUES (5, 3, 1800.0, 2500.00, TRUE, 'Naperville Central High');
-
-
-INSERT INTO land (property_id, sqr_footage) VALUES (2, 1456.21);
-
-INSERT INTO commercial_buildings (property_id, sqr_footage, type_of_business, rental_price) VALUES (3, 1456.21, 'robbery & lacerny', 2023.23);
+-- Land data (property_id 21-25)
+INSERT INTO land (property_id, sqr_footage) VALUES
+(21, 1456.21),
+(22, 2000.0),
+(23, 5000.0),
+(24, 3000.0),
+(25, 10000.0);
 
 
 INSERT INTO bookings (renter_id, property_id, start_date, end_date, payment_card_id, price, booking_status) VALUES (4, 1, '2025-11-08', '2026-11-08', 1, 2200.00, 'confirmed');
