@@ -321,6 +321,20 @@ class Renter:
         except Exception as e:
             print(f'\n  ❌ An error occurred: {e}\n')
             raise e
+    def get_rewards(renter_id):
+        try:
+            select_sql = "select total_points from renter_reward_view where renter_id = :renter_id"
+            
+            resp =Renter.query.select_all(select_sql, {"renter_id":renter_id})
+            if len(resp) == 0:
+                print('   You have not made any bookings with us :( ')
+                return
+        
+            print(f"Your total reward is: \n {round(resp[0]['total_points'])}")
+            
+        except Exception as e:
+            print(f'\n  ❌ An error occurred: {e}\n')
+            raise e
     def cli():
         """
         Interactive CLI for renter account management.
@@ -373,6 +387,7 @@ class Renter:
                 print("    [1] Payment Management")
                 print("    [2] Address Management")
                 print("    [e] Edit Profile")
+                print("    [r] See reward points")
                 print("    [p] Browse Properties")
                 print("    [q] Quit")
                 print()
@@ -426,6 +441,10 @@ class Renter:
                                 print("\n  ⬅️  Returning to main menu...\n")
                     case 'p':
                         Properties(db=Renter.db, db_gen=Renter.db_gen).cli(role=role)
+                    case 'r':
+                        print('Here is your reward so far...')
+                        Renter.get_rewards(renter_id)
+                        
         except Exception as e:
             print(f'\n  ❌ An error occurred: {e}\n')
             raise e
