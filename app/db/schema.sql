@@ -10,6 +10,8 @@
 --  To delete properties table and all child tables --
 --  (recommended - drops all dependent tables automatically)
 --  DROP TABLE IF EXISTS <table_name> CASCADE;
+-- DROP VIEW IF EXISTS view_name;
+
 -- to create tables:
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
@@ -167,16 +169,18 @@ CREATE TABLE bookings (
   FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE SET DEFAULT
 );
 
-CREATE TABLE reward_program (
-  renter_id int PRIMARY KEY,
-  total_points NUMERIC NOT NULL,-- derived from price total bookings(sum(price)*100) per renter   -- total_points NUMERIC GENERATED ALWAYS AS((SELECT COALESCE(SUM(b.price), 0)*100
-  --                                         FROM bookings b WHERE b.renter_id = renter_id))STORED 
-  created_at timestamp DEFAULT now(),
-  updated_at timestamp NULL, 
-  FOREIGN KEY (renter_id) REFERENCES renters_profile(id) ON DELETE CASCADE
-);   
+-- CREATE TABLE reward_program (
+--   renter_id int PRIMARY KEY,
+--   total_points NUMERIC NOT NULL,-- derived from price total bookings(sum(price)*100) per renter   -- total_points NUMERIC GENERATED ALWAYS AS((SELECT COALESCE(SUM(b.price), 0)*100
+--   --                                         FROM bookings b WHERE b.renter_id = renter_id))STORED 
+--   created_at timestamp DEFAULT now(),
+--   updated_at timestamp NULL, 
+--   FOREIGN KEY (renter_id) REFERENCES renters_profile(id) ON DELETE CASCADE
+-- );   
 
-COMMENT ON COLUMN reward_program.total_points IS 'derived from price total bookings(sum(price)*100) per renter';
+-- We switched to view so total_points is always up-to-data and automatically calculating from bookings avoiding redundancy. 
+CREATE OR REPLACE VIEW renter_reward_view AS (select renter_id, sum(price *10) as total_points from bookings group by renter_id);
+-- COMMENT ON COLUMN reward_program.total_points IS 'derived from price total bookings(sum(price)*100) per renter';
 
 --TEST DATA
 
@@ -217,12 +221,19 @@ VALUES
 (2, '0000-0000-0000-0000', 'visa', 1, 0, 1970, now());
 
 INSERT INTO users (role, first_name, last_name, email) VALUES ('agent','Add','Name', 'admintest@gmail.com'), -- 3
-                                                              ('renter','Renter','Name', 'rentertest@gmail.com') ; --4
-INSERT INTO renters_profile (id, move_in_date, preferred_location, budget) VALUES (4, '2025-09-01', 'Chicago, IL', 2500.00);
+                                                              ('renter','Renter','Name', 'rentertest@gmail.com'), --4
+                                                              ('renter','John','Smith', 'johnsmith@gmail.com'); --5
+INSERT INTO renters_profile (id, move_in_date, preferred_location, budget) VALUES 
+(4, '2025-09-01', 'Chicago, IL', 2500.00),
+(5, '2025-10-15', 'Naperville, IL', 3000.00);
 INSERT INTO agents_profile (id, job_title, agency, contact_info) VALUES (3, 'Real Estate Agent', 'DreamHomes Realty', 'test@dreamhomes.com');                                                                        
-INSERT INTO  renter_addresses (renter_id, street, city, state, zip) VALUES (4, '123 State Street', 'Chicago', 'IL', '60616');
-INSERT INTO credit_cards (renter_id, card_number, card_type, billing_address_id, expiration_month, expiration_year) VALUES (4, '15056415105421', 'visa', 1, 12, 2026);
-INSERT INTO agent_assigned (agent_id, renter_id) VALUES (3, 4);
+INSERT INTO  renter_addresses (renter_id, street, city, state, zip) VALUES 
+(4, '123 State Street', 'Chicago', 'IL', '60616'),
+(5, '456 Oak Avenue', 'Naperville', 'IL', '60540');
+INSERT INTO credit_cards (renter_id, card_number, card_type, billing_address_id, expiration_month, expiration_year) VALUES 
+(4, '15056415105421', 'visa', 1, 12, 2026),
+(5, '98765432109876', 'mastercard', 2, 6, 2027);
+INSERT INTO agent_assigned (agent_id, renter_id) VALUES (3, 4), (3, 5);
 -- Properties: 5 apartments (1-5), 5 houses (6-10), 5 commercial buildings (11-15), 5 vacation homes (16-20), 5 land (21-25)
 INSERT INTO properties (description, type, location, state, city, price, availability, crime_rates) VALUES
 -- Apartments (property_id 1-5)
@@ -297,7 +308,26 @@ INSERT INTO land (property_id, sqr_footage) VALUES
 (25, 10000.0);
 
 
-INSERT INTO bookings (renter_id, property_id, start_date, end_date, payment_card_id, price, booking_status) VALUES (4, 1, '2025-11-08', '2026-11-08', 1, 2200.00, 'confirmed');
+-- Bookings: 3 for renter_id = 5, 8 for renter_id = 4
+INSERT INTO bookings (renter_id, property_id, start_date, end_date, payment_card_id, price, booking_status) VALUES 
+-- Bookings for renter_id = 5 (3 bookings)
+(5, 6, '2025-12-01', '2026-06-01', 2, 15000.00, 'confirmed'), -- House rental (6 months)
+(5, 17, '2025-11-15', '2025-12-15', 2, 4500.00, 'pending'), -- Vacation home (1 month)
+(5, 2, '2026-01-01', '2026-12-31', 2, 21600.00, 'confirmed'), -- Apartment rental (1 year)
+-- Bookings for renter_id = 4 (8 bookings)
+(4, 1, '2025-11-08', '2026-11-08', 1, 26400.00, 'confirmed'), -- Apartment (1 year)
+(4, 7, '2025-12-01', '2026-03-01', 1, 9600.00, 'confirmed'), -- House (3 months)
+(4, 3, '2026-02-01', '2026-08-01', 1, 16800.00, 'pending'), -- Apartment (6 months)
+(4, 8, '2026-04-15', '2026-07-15', 1, 12600.00, 'confirmed'), -- House (3 months)
+(4, 18, '2025-12-20', '2026-01-05', 1, 3200.00, 'confirmed'), -- Vacation home (2 weeks)
+(4, 12, '2026-01-01', '2026-12-31', 1, 102000.00, 'pending'), -- Commercial building (1 year)
+(4, 9, '2026-05-01', '2026-11-01', 1, 13200.00, 'confirmed'), -- House (6 months)
+(4, 19, '2026-06-01', '2026-06-15', 1, 2400.00, 'pending'); -- Vacation home (2 weeks)
 
-INSERT INTO reward_program (renter_id, total_points) SELECT renter_id, SUM(price) * 100 FROM bookings WHERE renter_id = 4 GROUP BY renter_id;
+-- Update reward program for all renters with confirmed bookings
+INSERT INTO reward_program (renter_id, total_points) 
+SELECT renter_id, SUM(price) * 100 FROM bookings WHERE booking_status = 'confirmed' GROUP BY renter_id
+ON CONFLICT (renter_id) DO UPDATE SET 
+    total_points = (SELECT SUM(price) * 100 FROM bookings WHERE renter_id = reward_program.renter_id AND booking_status = 'confirmed'), 
+    updated_at = now();
 
