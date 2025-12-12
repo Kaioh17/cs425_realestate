@@ -28,18 +28,21 @@ class query_:
         Raises:
             ValueError: If query is None or empty.
         """
-        _Validators._ensure_query(query)
-        stmt = text(query)
-        
-        if not param:
-            result = self.db.execute(stmt)
-        elif param:
-            result = self.db.execute(stmt, param)
+        try:
+            _Validators._ensure_query(query)
+            # print(param)
+            stmt = text(query)
             
-        rows = result.mappings().all()
-        # self._print_all(result)
-        # print('Debug: {}'.format(rows))
-        return rows
+            if not param:
+                result = self.db.execute(stmt)
+            elif param:
+                result = self.db.execute(stmt, param)
+                
+            rows = result.mappings().all()
+        
+            return rows
+        except Exception as e:
+            raise e
     def _insert(self, query, params: dict):
         """Insert records into the database using a parameterized query.
         
@@ -55,14 +58,17 @@ class query_:
         Raises:
             ValueError: If query or params are None or empty.
         """
-        _Validators._ensure_params(params)
-        _Validators._ensure_query(query)
-        sql_query = text(query)
-        result = self.db.execute(sql_query, params)
-       
-        self.db.commit()
+        try:
+            _Validators._ensure_params(params)
+            _Validators._ensure_query(query)
+            sql_query = text(query)
+            result = self.db.execute(sql_query, params)
+        except:
+            self.db.rollback()
+        finally:           
+            self.db.commit()
         
-        return result
+            return result
     def _delete_by(self, query: str=None, 
                    param: any=None):
         """Delete records from the database matching the provided parameters.
@@ -88,12 +94,15 @@ class query_:
             sql_query = text(query)
             
             self.db.execute(sql_query, param)
-            self.db.commit()
+            # self.db.commit()
             print('\nDelete Successfull🎊\n')
-            return 
         
-        except Exception as e:
-            raise e
+        except:
+            self.db.rollback()
+        finally:           
+            self.db.commit()
+            return 
+            
     def _update(self, query, param):
         """Update existing records in the database.
         
@@ -117,12 +126,15 @@ class query_:
             
             sql_query = text(query)
             self.db.execute(sql_query, param)
-            self.db.commit()
             print('\nUpdate successfull🎊\n')
-            return
+    
         except Exception as e:
-            raise e
-    def _print_all(self, result):
+            print(f"There was Rollback {e}")
+            self.db.rollback()
+        finally:           
+            self.db.commit()
+            return 
+    def _print_all(self, result: list[dict], key:str =None):
         """Print all rows from a query result (debugging utility).
         
         Iterates through the result set and prints each row with a newline separator.
@@ -134,8 +146,15 @@ class query_:
         Returns:
             None
         """
-        for i in result:
-            print(i, "\n")
+        if key is None:
+            return
+        save_list = []
+        for i in range(len(result)):
+            save_list.append(result[i][key])
+        print(save_list)
+        return save_list
+ 
+            
              
 class _Validators:
     
@@ -161,6 +180,9 @@ class _Validators:
         """
         if not param: 
             raise ValueError('Param is needed to filter search')
+    # def _is_exist(db, query, param):
+        
+                 
         
 class _Display:
     
@@ -180,4 +202,5 @@ class _Display:
             None
         """
         print(tabulate(df, headers='keys', tablefmt='psql', showindex=showindex))
+
         

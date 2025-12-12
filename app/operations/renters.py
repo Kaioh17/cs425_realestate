@@ -327,10 +327,20 @@ class Renter:
             
             resp =Renter.query.select_all(select_sql, {"renter_id":renter_id})
             if len(resp) == 0:
-                print('   You have not made any bookings with us :( ')
+                print("\n" + "="*80)
+                print(" " * 25 + "🎁 REWARD POINTS 🎁")
+                print("="*80)
+                print("\n  😔 You have not made any bookings with us yet.")
+                print("\n  Start booking properties to earn reward points!")
+                print("="*80 + "\n")
                 return
         
-            print(f"Your total reward is: \n {round(resp[0]['total_points'])}")
+            print("\n" + "="*80)
+            print(" " * 25 + "🎁 REWARD POINTS 🎁")
+            print("="*80)
+            print("\n" + " " * 25 + f"⭐ Your Total Reward Points ⭐")
+            print(" " * 30 + f"{round(resp[0]['total_points']):,}")
+            print("\n" + "="*80 + "\n")
             
         except Exception as e:
             print(f'\n  ❌ An error occurred: {e}\n')
