@@ -26,7 +26,9 @@ class Renter:
     db = next(db_gen)
     # select = helper_ser
     query = helper_service.query_(db)
-    
+    def input(string: str):
+        return input(string).strip()
+        
     def create_renters():
         try:
             print("\n" + "="*50)
@@ -37,7 +39,7 @@ class Renter:
             print("  Please provide the following information:\n")
             first_name = input("  First Name [Terrel]: ") or 'Terrel'
             last_name = input("  Last Name [Williams]: ") or 'Williams'
-            email = input("  Email Address: ")
+            email = input("  Email Address[terrel@gmail.com]: ") or 'terrel@gmail.com'
             print()
             move_in_date = input("  When do you plan on moving in? [2025-09-01 00:00:00]: ") or '2025-09-01 00:00:00'
             preferred_location = input("  Preferred Location [Chicago, IL]: ") or 'Chicago, IL'
@@ -46,7 +48,7 @@ class Renter:
             to_dict = {'user': {'role': role,
                         'first_name': first_name.capitalize(),
                     'last_name': last_name.capitalize(),
-                    'email': email or 'terrel@gmail.com'},
+                    'email': email},
                     'renter': {'id': 0,
                                 'move_in_date': move_in_date ,
                                 'preferred_location': preferred_location ,
@@ -80,7 +82,7 @@ class Renter:
             print("\n" + "="*50)
             print("🔐 RENTER LOGIN")
             print("="*50 + "\n")
-            email = input("📧 Email [terrel@gmail.com]: ") or 'terrel@gmail.com'
+            email = Renter.input("📧 Email [terrel@gmail.com]: ") or 'terrel@gmail.com'
             # password = input("password: ")
             
             sql = 'select * from users where email = :email'
@@ -380,7 +382,7 @@ class Renter:
                     case '2': 
                         Renter.create_renters()
                         token_created = 'token'
-                        b=False
+                        b=True
                     case _:
                         print('\n  ❌ Invalid choice. Please select 1 or 2.\n')
                         b = True

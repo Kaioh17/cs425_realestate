@@ -42,6 +42,7 @@ class query_:
         
             return rows
         except Exception as e:
+            print(f"Rollback occured: {e}")
             raise e
     def _insert(self, query, params: dict):
         """Insert records into the database using a parameterized query.
@@ -63,11 +64,12 @@ class query_:
             _Validators._ensure_query(query)
             sql_query = text(query)
             result = self.db.execute(sql_query, params)
-        except:
+        except Exception as e:
+            print(f"Rollback occured: {e}")
             self.db.rollback()
+            raise
         finally:           
             self.db.commit()
-        
             return result
     def _delete_by(self, query: str=None, 
                    param: any=None):
