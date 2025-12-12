@@ -10,7 +10,7 @@ class query_:
             db: Database connection object from SQLAlchemy.
         """
         self.db = db
-    def select_all(self,query: str = None, param: str = None):
+    def select_all(self,query: str = None, param: str = None, limit: str = None):
         """Execute SELECT queries and return results as mappings.
         
         This helper method prevents repetitive coding and accepts SQL queries as strings.
@@ -29,9 +29,13 @@ class query_:
             ValueError: If query is None or empty.
         """
         try:
+            
             _Validators._ensure_query(query)
             # print(param)
-            stmt = text(query)
+            _limit = f" limit {int(limit)}" if limit is not None and limit.isdigit() else "" 
+            stmt = text(query+_limit)
+            # print(stmt)
+            
             
             if not param:
                 result = self.db.execute(stmt)
@@ -39,7 +43,7 @@ class query_:
                 result = self.db.execute(stmt, param)
                 
             rows = result.mappings().all()
-        
+            # print(row
             return rows
         except Exception as e:
             print(f"Rollback occured: {e}")

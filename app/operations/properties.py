@@ -78,7 +78,7 @@ class Properties:
             order_clause = f", ".join(order_by) if order_by else ""
             order_stmt = f" order by {order_clause}" if order_by else ""
         
-            select_sql = f"select price,{self.display[type]},location, type ,description, crime_rates from properties join {type} on {type}.property_id = properties.id {where_clause} {order_stmt}"
+            select_sql = f"select {self.property},{self.display[type]} join {type} on {type}.property_id = properties.id {where_clause} {order_stmt}"
             resp = query_(db=self.db).select_all(query=select_sql, param=params)
             # pd.options.display.float_format = '{:,.2f}'.format
             
@@ -268,13 +268,10 @@ class Properties:
             if type and type.isdigit():
                 type = self.allowed_types[int(type)]
                 
-            self._get_property_data(type)
+            self._get_property_data(type=type)
 
-            response = query_(self.db).select_all(query=f"select id,{self.property}, {self.display[type]} from properties as p join {type} as t on p.id = t.property_id where type = :type", param={"type": type})
             
-            # df = pd.DataFrame(response)
-            
-            helper_service._Display.pretty_df(response)
+            # helper_service._Display.pretty_df(response)
             print()
             
             prop_id = input("  Enter property ID to delete: ").strip()
@@ -326,15 +323,13 @@ class Properties:
                     type_param[k] = v
 
                 
-            print(param)
-            print(place_holders)   
+              
             place_holders = ", ".join(place_holders)
             type_place_holders = ", ".join(type_place_holders)
             update_sql=f"update properties set {place_holders}  where id = {id}"
             type_update_sql=f"update {type} set {type_place_holders}  where property_id = {id}"
             
-            print(update_sql)
-         
+        
             query_(db=self.db)._update(query=update_sql, param=param)
             query_(db=self.db)._update(query=type_update_sql, param=type_param)
             
@@ -372,12 +367,8 @@ class Properties:
             type = prop_dict['type'] = input("  * Enter a valid type: ").lower() or None
         if type and type.isdigit():
             type = prop_dict['type'] = self.allowed_types[int(type)]
-        response = query_(self.db).select_all(query="select * from properties where type = :type", param={"type":type})
-        print("\n" + "-"*80)
-        print(" " * 30 + "Available Properties")
-        print("-"*80 + "\n")
-        df = pd.DataFrame(response)
-        helper_service._Display.pretty_df(response)
+        self._get_property_data(type=type)
+        
         print()
         
         id = input(f"Property id: ")
@@ -464,10 +455,6 @@ class Properties:
         print("="*80 + "\n")
 
             
-        # dict['land']['sqr_footage'] = float(input("Square footage: "))
-        
-        
-        # print(dict)
         return self.update_properties(dict, id=id)
     def list_all_properties(self):
         try:
@@ -478,6 +465,7 @@ class Properties:
             print("    [a] List all properties")
             print("    [p] List by property type")
             print("    [s] Search with filters")
+            print("    [id] Search by id")
             print("    [b] Go back ")
             print()
             option = input("  Enter your choice: ").lower().strip()
@@ -489,13 +477,13 @@ class Properties:
                     print("-"*80 + "\n")
                     # For "all", we need to handle multiple property types
                     # This is a simplified version - you may want to union all types
-                    select_sql = f"select {self.property} from properties"
-                    response = query_(db=self.db).select_all(select_sql)
-                    if response:
-                        helper_service._Display.pretty_df(response)
-                        print("\n" + "="*80 + "\n")
-                    else:
-                        print("  No properties found.\n")
+                    limit = input("Would you like to enter a limit['n' if no | Enter the limit]: ")
+                    
+                    # select_sql = f"select {self.property} from properties"
+                    # response = query_(db=self.db).select_all(query=select_sql, limit=limit)
+                    self._get_property_data(limit=limit)
+                        
+                    
                     
                 case "p":
                     print("\n" + "-"*80)
@@ -529,11 +517,19 @@ class Properties:
                         
                 case "s":
                     self.filter_prints()
+                case "id":
+                    id = input("Enter property id: ")
+                    self._get_property_data(id=id)
                 case "b":
                     return
                 case _:
                     print("\n  ⚠  Invalid option. Please try again.\n")
                     self.list_all_properties()
+            cont = input("Do you want to list again: [y|n]").lower()
+            
+            if cont == "y":
+                self.list_all_properties()
+            return 
                     
         except Exception as e:
             print(f"\n  ❌ Error listing properties: {e}\n")
@@ -653,21 +649,46 @@ class Properties:
         except Exception as e:
             raise e
         
-    def _get_property_data(self, type, id: int =None):
+    def _get_property_data(self, type: str = None, id: int = None, limit: str = None):
         """id: property_id
             type: property type"""
-        if id:
-            response =  query_(db = self.db).select_all(query=f"select {self.property}, {self.display[type]} from properties p join {type} as t on p.id = t.property_id where id=:id", param={"id":id})
+
+        if id and type:
+            response =  query_(db = self.db).select_all(query=f"select {self.property}, {self.display[type]} from properties p join {type} as t on p.id = t.property_id where id=:id", param={"id":id}, limit=limit)
+            print("\n" + "-"*80)
+            print(" " * 30 + "Property")
+            print("-"*80 + "\n")
+        elif type:
+            response =  query_(db = self.db).select_all(query=f"select id, {self.property}, {self.display[type]} from properties p join {type} as t on p.id = t.property_id where type=:type", param={"type": type}, limit=limit)
+            print("\n" + "-"*80)
+            print(" " * 30 + f"{type} Properties")
+            print("-"*80 + "\n")
+        elif id:
+            response =  query_(db = self.db).select_all(query=f"select {self.property} from properties where id=:id", param={"id":id}, limit=limit)
             print("\n" + "-"*80)
             print(" " * 30 + "Property")
             print("-"*80 + "\n")
         else:
-            response =  query_(db = self.db).select_all(query=f"select {self.property}, {self.display[type]} from properties p join {type} as t on p.id = t.property_id where type=:type", param={"type": type})
-            print("\n" + "-"*80)
-            print(" " * 30 + f"{type} Properties")
-            print("-"*80 + "\n")
+            for t in self.allowed_types:
+                # print(f"select {self.property}, {self.display[t]} from properties p join {t} as t on p.id = t.property_id")
+
+                response =  query_(db = self.db).select_all(query=f"select {self.property}, {self.display[t]} from properties p join {t} as t on p.id = t.property_id", limit=limit)
+                print("\n" + "-"*80)
+                print(" " * 30 + f"{t} Property")
+                print("-"*80 + "\n")
+                if response:
+                    helper_service._Display.pretty_df(response)
+                    print("\n" + "="*80 + "\n")
+                    
+                else: print(f"   No data for {t}")
+            return
+                
         
-        helper_service._Display.pretty_df(response)
+        if response:
+            helper_service._Display.pretty_df(response)
+            print("\n" + "="*80 + "\n")
+        else:
+            print("  No properties found.\n")
     def cli(self, role):
         try:
             live = True
