@@ -12,6 +12,7 @@
 --  DROP TABLE IF EXISTS <table_name> CASCADE;
 -- DROP VIEW IF EXISTS view_name;
 
+
 -- to create tables:
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
@@ -19,8 +20,8 @@ CREATE TABLE users (
   first_name varchar(25) NOT NULL,
   last_name varchar(25) NOT NULL,
   email varchar(255) UNIQUE,
-  created_at timestamp DEFAULT now()
-  
+  created_at timestamp DEFAULT now(),
+  updated_at timestamp DEFAULT now()  -- Added updated_at column
 );
 
 CREATE TABLE renters_profile (
@@ -29,6 +30,7 @@ CREATE TABLE renters_profile (
   preferred_location varchar(255),
   budget float,
   created_at timestamp DEFAULT now(),
+  updated_at timestamp DEFAULT now(),  -- Added updated_at column
   FOREIGN KEY (id) REFERENCES users(id)
 );
 
@@ -38,9 +40,10 @@ CREATE TABLE agents_profile (
   agency varchar NOT NULL,
   contact_info varchar NOT NULL,
   created_at timestamp DEFAULT now(),
+  updated_at timestamp DEFAULT now(),  -- Added updated_at column
   FOREIGN KEY (id) REFERENCES users(id) ON DELETE CASCADE
-
 );
+
 CREATE TABLE renter_addresses (
   id SERIAL PRIMARY KEY,
   renter_id int NOT NULL,
@@ -49,45 +52,33 @@ CREATE TABLE renter_addresses (
   state varchar(255) NOT NULL,
   zip varchar(20) NOT NULL,
   created_at timestamp DEFAULT now(),
-
+  updated_at timestamp DEFAULT now(),  -- Added updated_at column
   FOREIGN KEY (renter_id) REFERENCES renters_profile(id) ON DELETE CASCADE
 );
-
--- CREATE TABLE payment_methods (
---   card_number varchar PRIMARY KEY,
---   renter_id SERIAL NOT NULL,
---   address varchar NOT NULL,
---   expiry_date varchar NOT NULL,
---   type varchar NOT NULL,
---   at timestamp DEFAULT now()
---   FOREIGN KEY (renter_id) REFERENCES renters_profile(id)
--- );
--- WE CHANGED THIS PAYMENT METHOD TO CREDIT_CARDS, WITH BETTER FIELDS TO HANDLE DATA
 
 CREATE TABLE credit_cards (
   id SERIAL PRIMARY KEY,
   renter_id int NOT NULL,
   card_number varchar(20) NOT NULL, 
-  card_type varchar(20) NOT NULL, CHECK(card_type IN ('visa', 'mastercard')),   -- e.g. ,visa, Master card
+  card_type varchar(20) NOT NULL, CHECK(card_type IN ('visa', 'mastercard')),
   billing_address_id int NOT NULL,
   expiration_month int NOT NULL,
   expiration_year int NOT NULL,
   created_at timestamp DEFAULT now(),
+  updated_at timestamp DEFAULT now(),  -- Added updated_at column
   FOREIGN KEY (renter_id) REFERENCES renters_profile(id) ON DELETE CASCADE,
   FOREIGN KEY (billing_address_id) REFERENCES renter_addresses(id) ON DELETE CASCADE
 );
-
 
 CREATE TABLE agent_assigned (
   agent_id int DEFAULT 1,
   renter_id int DEFAULT 2,
   created_at timestamp DEFAULT now(),
+  updated_at timestamp DEFAULT now(),  -- Added updated_at column
   PRIMARY KEY (agent_id, renter_id),
   FOREIGN KEY (agent_id) REFERENCES agents_profile(id) ON DELETE SET DEFAULT,
   FOREIGN key (renter_id) REFERENCES renters_profile(id) ON DELETE SET DEFAULT
 );
-
-
 
 CREATE TABLE properties (
   id SERIAL PRIMARY KEY,
@@ -96,20 +87,22 @@ CREATE TABLE properties (
   location varchar(255) NOT NULL,
   state varchar(25) NOT NULL,
   city varchar(25) NOT NULL,
-  price NUMERIC(10, 2) NOT NULL, -- sale value
+  price NUMERIC(10, 2) NOT NULL,
   availability boolean NOT NULL,
   crime_rates varchar(20) NOT NULL,
-  created_at timestamp DEFAULT now()
+  created_at timestamp DEFAULT now(),
+  updated_at timestamp DEFAULT now()  -- Added updated_at column
 );
 
 CREATE TABLE apartments (
   property_id int PRIMARY KEY,
   num_rooms int NOT NULL,
   sqr_footage float NOT NULL,
-  building_type varchar(25)NOT NULL,
+  building_type varchar(25) NOT NULL,
   rental_price NUMERIC(10, 2) NOT NULL, 
   nearby_schools varchar,
   created_at timestamp DEFAULT now(),
+  updated_at timestamp DEFAULT now(),  -- Added updated_at column
   FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE
 );
 
@@ -117,24 +110,21 @@ CREATE TABLE houses (
   property_id int PRIMARY KEY,
   num_rooms int NOT NULL,
   sqr_footage float NOT NULL,
-  -- building_type varchar(25) NOT NULL,
-  -- price float NOT NULL, -- reason for change: redundant
   rental_price NUMERIC(10, 2) NOT NULL,
   houses_availability boolean NOT NULL,
   nearby_schools varchar NOT NULL,
   created_at timestamp DEFAULT now(),
+  updated_at timestamp DEFAULT now(),  -- Added updated_at column
   FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE
 );
-
--- do you think we should create a seperate table for nearby schools? To hold the description and use a multi valued attribute? 
---  so _schools(property_id, school_name, school_address) or simply a foreign key. 
 
 CREATE TABLE commercial_buildings (
   property_id int PRIMARY KEY, 
   sqr_footage float NOT NULL,
-  -- building_type varchar NOT NULL,
   type_of_business varchar(225) NOT NULL,
   rental_price NUMERIC(10, 2) NOT NULL,
+  created_at timestamp DEFAULT now(),
+  updated_at timestamp DEFAULT now(),  -- Added updated_at column
   FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE
 );
 
@@ -142,7 +132,8 @@ CREATE TABLE vacation_homes (
   property_id int PRIMARY KEY,
   num_rooms int NOT NULL,
   sqr_footage float NOT NULL,
-  -- building_type varchar NOT NULL,
+  created_at timestamp DEFAULT now(),
+  updated_at timestamp DEFAULT now(),  -- Added updated_at column
   FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE
 );
 
@@ -150,33 +141,37 @@ CREATE TABLE land (
   property_id int PRIMARY KEY, 
   sqr_footage float NOT NULL,
   created_at timestamp DEFAULT now(),
-
+  updated_at timestamp DEFAULT now(),  -- Added updated_at column
   FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE
 );
---can we buy a house in a real estate 
+
 CREATE TABLE bookings (
   id SERIAL PRIMARY KEY,
   renter_id int DEFAULT 2,
   property_id int DEFAULT 1,
-  start_date date NOT NULL, --start rent period
-  end_date date NOT NULL, --start rent period
+  start_date date NOT NULL,
+  end_date date NOT NULL,
   payment_card_id int DEFAULT 0,
   price NUMERIC(10, 2) NOT NULL,
   booking_date timestamp DEFAULT now(),
-  booking_status varchar(20) DEFAULT 'pending', CHECK (booking_status IN ('pending', 'confirmed', 'canceled')), -- 'pending', 'confirmed', 'cancelled'
+  booking_status varchar(20) DEFAULT 'pending', CHECK (booking_status IN ('pending', 'confirmed', 'canceled')),
+  created_at timestamp DEFAULT now(),
+  updated_at timestamp DEFAULT now(),  -- Added updated_at column
   FOREIGN KEY (renter_id) REFERENCES renters_profile(id) ON DELETE SET DEFAULT,
   FOREIGN KEY (payment_card_id) REFERENCES credit_cards(id) ON DELETE SET DEFAULT,
   FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE SET DEFAULT
 );
 
--- CREATE TABLE reward_program (
---   renter_id int PRIMARY KEY,
---   total_points NUMERIC NOT NULL,-- derived from price total bookings(sum(price)*100) per renter   -- total_points NUMERIC GENERATED ALWAYS AS((SELECT COALESCE(SUM(b.price), 0)*100
---   --                                         FROM bookings b WHERE b.renter_id = renter_id))STORED 
---   created_at timestamp DEFAULT now(),
---   updated_at timestamp NULL, 
---   FOREIGN KEY (renter_id) REFERENCES renters_profile(id) ON DELETE CASCADE
--- );   
+--keeps track of who updated what
+create table property_update_log(
+    property_id int,
+    agent_id int,
+    logged_at timestamp DEFAULT now(),
+    foreign key (agent_id) references agents_profile(id) on delete cascade,
+    foreign key (property_id) references property(id) on delete cascade
+);
+
+
 
 -- We switched to view so total_points is always up-to-data and automatically calculating from bookings avoiding redundancy. 
 CREATE OR REPLACE VIEW renter_reward_view AS (select renter_id, sum(price *10) as total_points from bookings group by renter_id);

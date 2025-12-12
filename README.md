@@ -45,7 +45,7 @@ On Windows:
 ```bash
 pip install -r app\requirement.txt
 ```
-
+**Database Sections**
 - Provide database credentials using environment variables (or a `.env` file in `app/db` or project root). The following variables are expected by `connect.py`:
   - `DB_NAME`
   - `DB_USER`
@@ -62,6 +62,23 @@ DB_PASSWORD=secret
 DB_HOST=127.0.0.1
 DB_PORT=5432
 ```
+To set up or access db on terminal:
+```bash
+psql -U postgres -h localhost
+```
+Before you begin, you will need to create all tables at
+```bash
+app/db/schema.sql
+```
+You will need to set up all triggers and fuctions at:
+```bash
+app/db/triggers.sql
+```
+If you would like more mock data for tables you can get that at:
+```bash
+app/db/mock_inserts.sql
+``` 
+Simply copy and paste all tables and default inserts to pgadmin, psql or any environment of your choice
 
 **How to Run (basic)**
 - Preferred: run as a module from the project root so package imports work correctly:
