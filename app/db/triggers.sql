@@ -80,18 +80,15 @@ create trigger updateDate
   for each row
   execute function update_updated_at_column();
 
--- create function insert_to_property_log()
---     returns trigger as 
---     $$
---     begin
---         insert into property_update_log(property_id, agent_id) values (old.id, old.agent_id);
---         return new;
---     end;
---     $$ language plpgsql;
+create trigger updateDate
+  before update
+  on agencies
+  for each row
+  execute function update_updated_at_column();
 
+create trigger updateDate
+  before update
+  on agency_property
+  for each row
+  execute function update_updated_at_column();
 
--- create trigger addToLog
---     before update
---     on properties
---     for each row 
---     execute function insert_to_property_log();
