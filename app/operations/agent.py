@@ -14,11 +14,14 @@ Responsibilities:
 # - helper_service.md for documentation
 # - helper_service._Display.pretty_df() for formatting DataFrames as tables
 
+import pandas as pd
+
 from app.db.connect import get_db
 from sqlalchemy import text
 from . import helper_service, properties
 from .helper_service import _Display as d
 from pydantic import EmailStr
+
 class Agent:
     db_gen = get_db()
     db = next(db_gen)
@@ -102,7 +105,7 @@ class Agent:
         email = input("  📧 Email: ") or 'admintest@gmail.com'
         # password = input("password: ")
         
-        select_sql = 'select *, agency_id from users join agents_profile a on a.id = users.id where email = :email'
+        select_sql = 'select *, a.agency_id from users join agents_profile a on a.id = users.id where email = :email'
         
         # result = Agent.db.execute(sql,{'email':email or 'test@dreamhomes.com'})
         result = helper_service.query_(db=self.db).select_all(query=select_sql, param={'email': email})
@@ -131,7 +134,133 @@ class Agent:
         print("\n" + "="*80)
         print(" " * 30 + "👤 AGENT DETAILS 👤")
         print("="*80 + "\n")
-        
+    
+    def view_bookings(self, agent_id):
+        """View all bookings for renters assigned to this agent."""
+        try:
+            select_sql = """
+                SELECT b.id AS booking_id, 
+                    u.first_name || ' ' || u.last_name AS renter_name,
+                    u.email AS renter_email,
+                    p.description, p.location, p.city,
+                    b.start_date, b.end_date, b.price, b.booking_status,
+                    c.card_number, c.card_type
+                FROM agent_assigned aa
+                JOIN bookings b ON aa.renter_id = b.renter_id
+                JOIN users u ON b.renter_id = u.id
+                JOIN properties p ON b.property_id = p.id
+                LEFT JOIN credit_cards c ON b.payment_card_id = c.id
+                WHERE aa.agent_id = :agent_id
+                ORDER BY b.start_date DESC
+            """
+            result = self.query.select_all(query=select_sql, param={"agent_id": agent_id})
+            
+            print("\n" + "="*80)
+            print(" " * 25 + " CLIENT BOOKINGS ")
+            print("="*80)
+            
+            if len(result) == 0:
+                print("\n  No bookings found for your assigned clients.\n")
+                return None
+            
+            df = pd.DataFrame(result)
+            print()
+            helper_service._Display.pretty_df(df=df, showindex=False)
+            print()
+            return result
+            
+        except Exception as e:
+            print(f'Error: {e}')
+            raise e
+
+    def cancel_booking(self, agent_id):
+        """Cancel a booking for a renter assigned to this agent."""
+        try:
+            # Show bookings first
+            result = self.view_bookings(agent_id)
+            if result is None:
+                return
+            
+            # Filter to only active bookings
+            active_bookings = [b for b in result if b['booking_status'] != 'canceled']
+            if len(active_bookings) == 0:
+                print("  No active bookings to cancel.\n")
+                return
+            
+            print("-"*80)
+            booking_id = input("\n  Enter Booking ID to cancel (or press ENTER to go back): ").strip()
+            
+            if not booking_id:
+                print("\n  Returning to menu...\n")
+                return
+            
+            # Validate booking ID
+            valid_ids = [str(b['booking_id']) for b in active_bookings]
+            if booking_id not in valid_ids:
+                print("\n  Invalid booking ID or booking already canceled.\n")
+                return
+            
+            # Get booking details for confirmation
+            booking_info = next((b for b in active_bookings if str(b['booking_id']) == booking_id), None)
+            
+            # Show details and confirm
+            print(f"\n    Booking Details:")
+            print(f"     Renter: {booking_info['renter_name']} ({booking_info['renter_email']})")
+            print(f"     Property: {booking_info['description']}")
+            print(f"     Dates: {booking_info['start_date']} to {booking_info['end_date']}")
+            print(f"     Price: ${booking_info['price']}")
+            
+            confirm = input(f"\n  Are you sure you want to cancel this booking? [y/n]: ").lower()
+            if confirm != 'y':
+                print("\n  Cancellation aborted.\n")
+                return
+            
+            # Execute the cancel - note we join through agent_assigned for security
+            update_sql = """
+                UPDATE bookings 
+                SET booking_status = 'canceled'
+                WHERE id = :booking_id 
+                AND renter_id IN (SELECT renter_id FROM agent_assigned WHERE agent_id = :agent_id)
+            """
+            self.query._update(query=update_sql, param={"booking_id": int(booking_id), "agent_id": agent_id})
+            
+            print("\n" + "="*80)
+            print(" " * 25 + "✅ BOOKING CANCELED ✅")
+            print("="*80)
+            print(f"\n  Booking #{booking_id} has been canceled.")
+            print(f"  Refund will be processed to {booking_info['renter_name']}'s payment method.\n")
+            
+        except Exception as e:
+            print(f'Error: {e}')
+            raise e
+
+    def manage_bookings(self, agent_id):
+        """Booking management menu for agents."""
+        try:
+            while True:
+                print("\n" + "="*80)
+                print(" " * 30 + "BOOKING MANAGEMENT")
+                print("="*80)
+                print("\n  Please select an option:\n")
+                print("    [v] View Client Bookings")
+                print("    [c] Cancel a Booking")
+                print("    [ENTER] Go Back")
+                print()
+                print("-"*80)
+                choice = input("\n  Choose an option: ").lower().strip()
+                
+                match choice:
+                    case 'v':
+                        self.view_bookings(agent_id)
+                    case 'c':
+                        self.cancel_booking(agent_id)
+                    case _:
+                        print("\n  Returning to main menu...\n")
+                        break
+                        
+        except Exception as e:
+            print(f'Error: {e}')
+            raise e
         
         
     def cli(self):
@@ -182,6 +311,8 @@ class Agent:
                     break
                 case 'p':
                     properties.Properties(db=self.db,db_gen=self.db_gen, agency_id = agency_id, agent_id = agent_id).cli(role)
+                case 'b':
+                    self.manage_bookings(agency_id)
                 case _:
                     print("\n  Exiting...\n")
                     break
