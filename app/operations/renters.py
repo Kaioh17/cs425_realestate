@@ -93,7 +93,8 @@ class Renter:
                 print('\n  ⚠️  User does not exist with this email address.\n')
                 ans = input('  Would you like to create a new account? [y/n]: ').lower()
                 if ans == 'y':
-                    return Renter.create_renters()
+                    Renter.create_renters()
+                    return Renter.signin()
                 else:
                     print('\n  Returning to main menu...\n')
                     return  None
@@ -318,7 +319,7 @@ class Renter:
             print("\n  ✅ Card and associated address deleted successfully!\n")
             anse = input('  Do you have more cards to delete? [y/n]: ')
             if anse.lower() == 'y':
-                return Renter.delete_card(email=email)
+                return Renter.delete_card(email=email, renter_id=renter_id)
             else:
                 return
         except Exception as e:
@@ -531,7 +532,7 @@ class Renter:
                         # print('feature coming up soon...')
                         response = Renter.signin()
                         if response is None:
-                            return
+                            return 
                         email = response[0]['email']
                         # print(email)
                         
