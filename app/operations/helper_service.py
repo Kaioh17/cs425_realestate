@@ -48,7 +48,7 @@ class query_:
         except Exception as e:
             print(f"Rollback occured: {e}")
             raise e
-    def _insert(self, query, params: dict):
+    def _insert(self, query, params: dict, no_commit: bool = False):
         """Insert records into the database using a parameterized query.
         
         Executes an INSERT query with the provided parameters and commits the transaction.
@@ -67,13 +67,18 @@ class query_:
             _Validators._ensure_params(params)
             _Validators._ensure_query(query)
             sql_query = text(query)
+                
             result = self.db.execute(sql_query, params)
+            if "returning" in query.lower():
+                result = result.scalar()
         except Exception as e:
             print(f"Rollback occured: {e}")
             self.db.rollback()
             raise
-        finally:           
-            self.db.commit()
+        finally:      
+            if not no_commit:
+                print("Commit made!!!!")
+                self.db.commit()         
             return result
     def _delete_by(self, query: str=None, 
                    param: any=None):
@@ -129,14 +134,16 @@ class query_:
         try:
             _Validators._ensure_params(param)
             _Validators._ensure_query(query)
-            
+            # print(query)
             sql_query = text(query)
+            # print(param)
             self.db.execute(sql_query, param)
             print('\nUpdate successfull🎊\n')
     
         except Exception as e:
-            print(f"There was Rollback {e}")
+            print(f"There was rollback: {e}")
             self.db.rollback()
+            raise e
         finally:           
             self.db.commit()
             return 
@@ -193,9 +200,9 @@ class _Validators:
 class _Display:
     
     def pretty_df(df, showindex: bool = False):
-        """Pretty-print a pandas DataFrame in PostgreSQL-style table format.
+        """Pretty-print a pandas DataFrame or list[dict] in PostgreSQL-style table format.
         
-        Formats and displays a DataFrame using the tabulate library with a clean,
+        Formats and displays a DataFrame or list[dict] using the tabulate library with a clean,
         readable PostgreSQL-style table format. Useful for displaying query results
         in the console.
         
@@ -209,4 +216,5 @@ class _Display:
         """
         print(tabulate(df, headers='keys', tablefmt='psql', showindex=showindex))
 
-        
+    def input(string: str):
+        return input(string).strip() 
