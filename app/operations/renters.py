@@ -347,6 +347,111 @@ class Renter:
         except Exception as e:
             print(f'\n  ❌ An error occurred: {e}\n')
             raise e
+        
+    def view_bookings(renter_id):
+            try:
+                select_sql = """
+                    select b.id as booking_id, b.start_date, b.end_date, b.price, b.booking_status, p.description, p.location, p.city, c.card_number, c.card_type 
+                    from bookings b 
+                    left join credit_cards c on b.payment_card_id = c.id 
+                    join properties p on b.property_id = p.id 
+                    where b.renter_id = :renter_id
+                """
+                resp = Renter.query.select_all(query = select_sql, param = {"renter_id": renter_id})
+
+                if len(resp) == 0:
+                    print("Oops! You do not have any bookings yet!")
+                    return None
+
+                df = pd.DataFrame(resp)
+                helper_service._Display.pretty_df(df=df, showindex=False)
+                print()
+                return(resp)
+
+            except Exception as e:
+                print(f'Error: {e}')
+                raise e
+            
+    def cancel_booking(renter_id):
+        """Cancel a booking for the logged-in renter."""
+        try:
+            # Check if user has any bookings
+            resp = Renter.view_bookings(renter_id)
+            if resp is None:
+                return 
+            
+            # Filter to show only bookings that can be canceled
+            active_bookings = [b for b in resp if b['booking_status'] != 'canceled']
+            if len(active_bookings) == 0:
+                print(" No active bookings to cancel.\n")
+                return 
+            
+            print("-"*80)
+            booking_id = input("\n  Enter Booking ID to cancel (or press ENTER to go back): ").strip()
+            
+            if not booking_id:
+                print("\n Returning to menu...\n")
+                return
+            
+            # Verify the booking belongs to this renter and is not already canceled
+            booking_ids = [str(b['booking_id']) for b in active_bookings]
+            if booking_id not in booking_ids:
+                print("\n Invalid booking ID or booking already canceled.\n")
+                return
+            
+            # Confirm cancellation
+            confirm = input(f"\n Are you sure you want to cancel booking #{booking_id}? [y/n]: ").lower()
+            if confirm != 'y':
+                print("\n Cancellation aborted.\n")
+                return
+            
+            # Update booking status to canceled
+            update_sql = """
+                UPDATE bookings 
+                SET booking_status = 'canceled'
+                WHERE id = :booking_id AND renter_id = :renter_id
+            """
+            Renter.query._update(query=update_sql, param={"booking_id": int(booking_id), "renter_id": renter_id})
+            
+            print("\n" + "="*80)
+            print(" " * 25 + " BOOKING CANCELED ")
+            print("="*80)
+            print(f"\n  Booking #{booking_id} has been canceled.")
+            print("Refund will be processed to your saved payment method.\n")
+            
+        except Exception as e:
+            print(f'Error: {e}')
+            raise e
+    
+    
+    def manage_bookings(renter_id):
+        """Booking management menu for renters."""
+        try:
+            while True:
+                print("\n" + "="*80)
+                print(" " * 30 + "BOOKING MANAGEMENT")
+                print("="*80)
+                print("\n  Please select an option:\n")
+                print("    [v] View My Bookings")
+                print("    [c] Cancel a Booking")
+                print("    [ENTER] Go Back")
+                print()
+                print("-"*80)
+                choice = input("\n  Choose an option: ").lower().strip()
+                
+                match choice:
+                    case 'v':
+                        Renter.view_bookings(renter_id)
+                    case 'c':
+                        Renter.cancel_booking(renter_id)
+                    case _:
+                        print("\n Returning to main menu...\n")
+                        break
+                        
+        except Exception as e:
+            print(f'Error: {e}')
+            raise e
+
     def cli():
         """
         Interactive CLI for renter account management.
@@ -398,6 +503,7 @@ class Renter:
                 print("\n  What would you like to do?\n")
                 print("    [1] Payment Management")
                 print("    [2] Address Management")
+                print("    [b] Manage Bookings")
                 print("    [e] Edit Profile")
                 print("    [r] See reward points")
                 print("    [p] Browse Properties")
@@ -456,10 +562,15 @@ class Renter:
                     case 'r':
                         print('Here is your reward so far...')
                         Renter.get_rewards(renter_id)
+                    case 'b':
+                        print('Here are your current bookings...')
+                        Renter.manage_bookings(renter_id)
+                    
                         
         except Exception as e:
             print(f'\n  ❌ An error occurred: {e}\n')
             raise e
+        
+    
 if __name__ == '__main__':
     Renter.cli()
-    
