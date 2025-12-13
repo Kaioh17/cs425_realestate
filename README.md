@@ -6,7 +6,7 @@
 - **DB**: PostgreSQL
 - **ORM**: SQLAlchemy (used via `sqlalchemy` package; raw `psycopg2` is also present in some scripts)
 
-**Repository Structure**
+## Repository Structure
 - `app/` : Application code and small runner
   - `requirement.txt` : Python dependencies
   - `user.py` : Example code that queries users using SQLAlchemy `text()` statements and a session generator
@@ -14,127 +14,160 @@
     - `connect.py` : SQLAlchemy engine, `SessionLocal`, `Base` and `get_db()` generator
     - `create_models.py` : (older style) script that uses `psycopg2` to create tables
 
-**Quick Setup**
-- If you do not have Python installed, install from [python.org](https://www.python.org/):
-  > version 3.10 or higher
-- Create and activate a virtual environment (recommended):
+## Quick Setup
 
+### Prerequisites
+- Python 3.10 or higher from [python.org](https://www.python.org/)
+
+### Virtual Environment
 ```bash
 python -m venv venv
 ```
 
-On Linux/macOS:
+**Activate on Linux/macOS:**
 ```bash
 source venv/bin/activate
 ```
 
-On Windows:
+**Activate on Windows:**
 ```bash
 venv\Scripts\activate.bat
 ```
-```
 
-- Install dependencies:
+### Install Dependencies
 
-On Linux/macOS:
+**Linux/macOS:**
 ```bash
 pip install -r app/requirement.txt
 ```
 
-On Windows:
+**Windows:**
 ```bash
 pip install -r app\requirement.txt
 ```
-**Database Sections**
-- Provide database credentials using environment variables (or a `.env` file in `app/db` or project root). The following variables are expected by `connect.py`:
-  - `DB_NAME`
-  - `DB_USER`
-  - `DB_PASSWORD`
-  - `DB_HOST`
-  - `DB_PORT`
 
-Example `.env` content:
+## Database Setup
 
-```
+### Environment Variables
+Set database credentials via environment variables or `.env` file in `app/db` or project root:
+
+```env
 DB_NAME=realestate_db
 DB_USER=postgres
 DB_PASSWORD=secret
 DB_HOST=127.0.0.1
 DB_PORT=5432
 ```
-To set up or access db on terminal:
+
+### Initialize Database
 ```bash
 psql -U postgres -h localhost
 ```
-Before you begin, you will need to create all tables at
-```bash
-app/db/schema.sql
-```
-You will need to set up all triggers and fuctions at:
-```bash
-app/db/triggers.sql
-```
-If you would like more mock data for tables you can get that at:
-```bash
-app/db/mock_inserts.sql
-``` 
-Simply copy and paste all tables and default inserts to pgadmin, psql or any environment of your choice
 
-**How to Run (basic)**
-- Preferred: run as a module from the project root so package imports work correctly:
+Run these scripts in order:
+1. `app/db/schema.sql` - Create tables
+2. `app/db/triggers.sql` - Set up triggers and functions
+3. `app/db/mock_inserts.sql` - Add test data (optional)
 
-On Linux/macOS:
+## How to Run
+
+### Recommended: Run as a Module
+
+**Linux/macOS:**
 ```bash
 cd /home/kaioh/cs425_realestate
 python -m app.operations.user
 ```
 
-On Windows:
+**Windows:**
 ```bash
 cd path\to\cs425_realestate
 python -m app.operations.user
 ```
 
-- Alternative: run the script directly but set `PYTHONPATH` so `app` is importable:
+### Alternative: Set PYTHONPATH
 
-On Linux/macOS:
+**Linux/macOS:**
 ```bash
 cd /home/kaioh/cs425_realestate
 PYTHONPATH=$PWD python app/operations/user.py
 ```
 
-On Windows:
+**Windows:**
 ```bash
 cd path\to\cs425_realestate
 set PYTHONPATH=%cd%
 python app\operations\user.py
 ```
 
-Notes:
-- Running `python app/operations/user.py` without adjusting `PYTHONPATH` will raise `ModuleNotFoundError: No module named 'app'` because Python's import path will not include the project root when executing the script directly.
-- Using `python -m app.operations.user` runs the module in package context and is the recommended approach.
+> **Note:** Running `python app/operations/user.py` without `PYTHONPATH` raises `ModuleNotFoundError: No module named 'app'`. Use `python -m` for package context.
 
+## SQLAlchemy Overview
 
+SQLAlchemy has two main layers:
+- **Core**: SQL expression language, `create_engine()`, `text()` — good for raw SQL
+- **ORM**: Declarative mapping with `declarative_base()` and model classes
 
-**SQLAlchemy - A Simple Guide**
-- SQLAlchemy has two main layers:
-  - **Core**: SQL expression language, `create_engine`, `text()` — good for raw SQL.
-  - **ORM**: Declarative mapping with `declarative_base()` and model classes; works with `Session` to persist and query objects.
+### Key Components
+- **Engine**: Manages database connections via `create_engine()`
+- **SessionLocal**: Created with `sessionmaker()`; manages session lifecycle
+- **Base**: `declarative_base()` for defining ORM models
+- **get_db()**: Generator that yields a session and ensures cleanup
 
-Core components you'll see in this project:
-- **Engine**: created with `create_engine()`; it manages DB connections.
-- **SessionLocal**: created with `sessionmaker(...)`; used to create sessions scoped to a unit of work.
-- **Base**: `declarative_base()` used to define ORM models.
-- **get_db()**: a generator-based helper that yields a session and ensures it is closed after use.
+### Project Implementation
+`app/db/connect.py`:
+- Builds connection string from environment variables
+- Creates `SessionLocal` with `sessionmaker(autocommit=False, autoflush=False, bind=engine)`
+- Defines `Base = declarative_base()` for ORM models
+- Implements `get_db()` as a generator for safe session handling
 
-To create db and test data use `app/db/schema.sql` you can add more test data as needed. 
+## Git Workflow
 
-**How This Project Uses SQLAlchemy**
-- `app/db/connect.py`:
-  - Builds the connection string from environment variables and calls `create_engine()`.
-  - Defines `SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)`.
-  - Defines `Base = declarative_base()` for ORM models.
-  - Implements `get_db()` as a generator that yields a session (intended for dependency injection or safe session handling).
+### 1. Start with Latest Code
+```bash
+git checkout main
+git pull origin main
+```
 
+### 2. Create Feature Branch
+```bash
+git checkout -b feature/your-feature-name
+```
+For more info on see ```https://www.geeksforgeeks.org/git/introduction-to-git-branch/```
 
- 
+### 3. Make Changes and Commit
+```bash
+git add .
+git commit -m "Descriptive commit message"
+```
+
+### 4. Stay Updated with Main
+
+**Option A - Merge:**
+```bash
+git fetch origin
+git merge origin/main
+```
+
+**Option B - Rebase (cleaner history):**
+```bash
+git fetch origin
+git rebase origin/main
+```
+
+### 5. Push and Create Pull Request
+```bash
+git push origin feature/your-feature-name
+```
+Open a Pull Request on GitHub for review.
+
+### 6. After Merge, Clean Up
+```bash
+git branch -d feature/your-feature-name
+git push origin --delete feature/your-feature-name
+```
+
+### Conflict Prevention
+- Pull/rebase main frequently
+- Commit small, logical changes
+- Communicate when editing shared files

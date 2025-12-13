@@ -207,3 +207,105 @@ INSERT INTO land (property_id, sqr_footage) VALUES
 (100, 5500.0),
 (101, 6500.0);
 
+-- ============================================================================
+-- AGENCIES (agency_id starts from 1)
+-- ============================================================================
+INSERT INTO agencies (agency_name, agency_email) VALUES
+('Premier Realty Group', 'info@premierrealty.com'),
+('Elite Properties Inc', 'contact@eliteproperties.com'),
+('Metro Real Estate Solutions', 'hello@metrorealestate.com'),
+('Coastal Living Realty', 'info@coastalliving.com'),
+('Urban Development Partners', 'contact@urbandev.com'),
+('Luxury Homes Agency', 'info@luxuryhomes.com'),
+('Affordable Housing Solutions', 'contact@affordablehousing.com'),
+('Commercial Real Estate Group', 'info@commercialrealestate.com');
+
+-- ============================================================================
+-- USERS (for agents - user_id starts from 6, since schema.sql has users 1-5)
+-- ============================================================================
+INSERT INTO users (role, first_name, last_name, email) VALUES
+-- Agents for Premier Realty Group (agency_id 1)
+('agent', 'Sarah', 'Johnson', 'sarah.johnson@premierrealty.com'), -- 6
+('agent', 'Michael', 'Chen', 'michael.chen@premierrealty.com'), -- 7
+-- Agents for Elite Properties Inc (agency_id 2)
+('agent', 'Emily', 'Rodriguez', 'emily.rodriguez@eliteproperties.com'), -- 8
+('agent', 'David', 'Thompson', 'david.thompson@eliteproperties.com'), -- 9
+-- Agents for Metro Real Estate Solutions (agency_id 3)
+('agent', 'Jessica', 'Williams', 'jessica.williams@metrorealestate.com'), -- 10
+('agent', 'Robert', 'Martinez', 'robert.martinez@metrorealestate.com'), -- 11
+-- Agents for Coastal Living Realty (agency_id 4)
+('agent', 'Amanda', 'Davis', 'amanda.davis@coastalliving.com'), -- 12
+('agent', 'James', 'Wilson', 'james.wilson@coastalliving.com'), -- 13
+-- Agents for Urban Development Partners (agency_id 5)
+('agent', 'Lisa', 'Anderson', 'lisa.anderson@urbandev.com'), -- 14
+('agent', 'Christopher', 'Taylor', 'christopher.taylor@urbandev.com'), -- 15
+-- Agents for Luxury Homes Agency (agency_id 6)
+('agent', 'Jennifer', 'Brown', 'jennifer.brown@luxuryhomes.com'), -- 16
+('agent', 'Daniel', 'Garcia', 'daniel.garcia@luxuryhomes.com'), -- 17
+-- Agents for Affordable Housing Solutions (agency_id 7)
+('agent', 'Patricia', 'Miller', 'patricia.miller@affordablehousing.com'), -- 18
+('agent', 'Matthew', 'Moore', 'matthew.moore@affordablehousing.com'), -- 19
+-- Agents for Commercial Real Estate Group (agency_id 8)
+('agent', 'Linda', 'Jackson', 'linda.jackson@commercialrealestate.com'), -- 20
+('agent', 'Mark', 'White', 'mark.white@commercialrealestate.com'); -- 21
+
+-- ============================================================================
+-- AGENTS_PROFILE (matching users 6-21 with agencies 1-8)
+-- ============================================================================
+INSERT INTO agents_profile (id, job_title, agency_id, contact_info) VALUES
+-- Premier Realty Group (agency_id 1)
+(6, 'Senior Real Estate Agent', 1, 'sarah.johnson@premierrealty.com'),
+(7, 'Real Estate Agent', 1, 'michael.chen@premierrealty.com'),
+-- Elite Properties Inc (agency_id 2)
+(8, 'Senior Real Estate Agent', 2, 'emily.rodriguez@eliteproperties.com'),
+(9, 'Real Estate Agent', 2, 'david.thompson@eliteproperties.com'),
+-- Metro Real Estate Solutions (agency_id 3)
+(10, 'Senior Real Estate Agent', 3, 'jessica.williams@metrorealestate.com'),
+(11, 'Real Estate Agent', 3, 'robert.martinez@metrorealestate.com'),
+-- Coastal Living Realty (agency_id 4)
+(12, 'Senior Real Estate Agent', 4, 'amanda.davis@coastalliving.com'),
+(13, 'Real Estate Agent', 4, 'james.wilson@coastalliving.com'),
+-- Urban Development Partners (agency_id 5)
+(14, 'Senior Real Estate Agent', 5, 'lisa.anderson@urbandev.com'),
+(15, 'Real Estate Agent', 5, 'christopher.taylor@urbandev.com'),
+-- Luxury Homes Agency (agency_id 6)
+(16, 'Senior Real Estate Agent', 6, 'jennifer.brown@luxuryhomes.com'),
+(17, 'Real Estate Agent', 6, 'daniel.garcia@luxuryhomes.com'),
+-- Affordable Housing Solutions (agency_id 7)
+(18, 'Senior Real Estate Agent', 7, 'patricia.miller@affordablehousing.com'),
+(19, 'Real Estate Agent', 7, 'matthew.moore@affordablehousing.com'),
+-- Commercial Real Estate Group (agency_id 8)
+(20, 'Senior Real Estate Agent', 8, 'linda.jackson@commercialrealestate.com'),
+(21, 'Real Estate Agent', 8, 'mark.white@commercialrealestate.com');
+
+-- ============================================================================
+-- AGENT_PROPERTY (linking all properties 27-101 to agencies)
+-- ============================================================================
+-- Properties distributed across agencies:
+-- Agency 1 (Premier Realty): properties 27-35 (9 apartments)
+-- Agency 2 (Elite Properties): properties 36-44 (9 properties: 5 apartments, 4 houses)
+-- Agency 3 (Metro Real Estate): properties 45-53 (9 houses)
+-- Agency 4 (Coastal Living): properties 54-62 (9 properties: 1 house, 8 commercial)
+-- Agency 5 (Urban Development): properties 63-71 (9 commercial buildings)
+-- Agency 6 (Luxury Homes): properties 72-80 (9 vacation homes)
+-- Agency 7 (Affordable Housing): properties 81-89 (9 properties: 5 vacation homes, 4 land)
+-- Agency 8 (Commercial Real Estate): properties 90-101 (12 land properties)
+
+INSERT INTO agency_property (property_id, agency_id) VALUES
+-- Agency 1: Premier Realty Group - Apartments 27-35
+(27, 1), (28, 1), (29, 1), (30, 1), (31, 1), (32, 1), (33, 1), (34, 1), (35, 1),
+-- Agency 2: Elite Properties Inc - Properties 36-44 (5 apartments, 4 houses)
+(36, 2), (37, 2), (38, 2), (39, 2), (40, 2), (41, 2), (42, 2), (43, 2), (44, 2),
+-- Agency 3: Metro Real Estate Solutions - Houses 45-53
+(45, 3), (46, 3), (47, 3), (48, 3), (49, 3), (50, 3), (51, 3), (52, 3), (53, 3),
+-- Agency 4: Coastal Living Realty - Properties 54-62 (1 house, 8 commercial)
+(54, 4), (55, 4), (56, 4), (57, 4), (58, 4), (59, 4), (60, 4), (61, 4), (62, 4),
+-- Agency 5: Urban Development Partners - Commercial 63-71
+(63, 5), (64, 5), (65, 5), (66, 5), (67, 5), (68, 5), (69, 5), (70, 5), (71, 5),
+-- Agency 6: Luxury Homes Agency - Vacation Homes 72-80
+(72, 6), (73, 6), (74, 6), (75, 6), (76, 6), (77, 6), (78, 6), (79, 6), (80, 6),
+-- Agency 7: Affordable Housing Solutions - Properties 81-89 (5 vacation homes, 4 land)
+(81, 7), (82, 7), (83, 7), (84, 7), (85, 7), (86, 7), (87, 7), (88, 7), (89, 7),
+-- Agency 8: Commercial Real Estate Group - Land 90-101
+(90, 8), (91, 8), (92, 8), (93, 8), (94, 8), (95, 8), (96, 8), (97, 8), (98, 8), (99, 8), (100, 8), (101, 8);
+

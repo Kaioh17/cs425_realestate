@@ -12,7 +12,6 @@
 --  DROP TABLE IF EXISTS <table_name> CASCADE;
 -- DROP VIEW IF EXISTS view_name;
 
-
 -- to create tables:
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
@@ -22,6 +21,14 @@ CREATE TABLE users (
   email varchar(255) UNIQUE,
   created_at timestamp DEFAULT now(),
   updated_at timestamp DEFAULT now()  -- Added updated_at column
+);
+
+CREATE TABLE  agencies(
+  id serial primary key,
+  agency_name varchar(255) not null UNIQUE,
+  agency_email varchar(255) not null UNIQUE,
+  created_at timestamp DEFAULT now(),
+  updated_at timestamp DEFAULT now()
 );
 
 CREATE TABLE renters_profile (
@@ -37,12 +44,16 @@ CREATE TABLE renters_profile (
 CREATE TABLE agents_profile (
   id SERIAL PRIMARY KEY,
   job_title varchar,
-  agency varchar NOT NULL,
+  agency_id int NOT NULL,
   contact_info varchar NOT NULL,
   created_at timestamp DEFAULT now(),
   updated_at timestamp DEFAULT now(),  -- Added updated_at column
-  FOREIGN KEY (id) REFERENCES users(id) ON DELETE CASCADE
+  FOREIGN KEY (id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (agency_id) REFERENCES agencies(id) ON DELETE CASCADE
+
 );
+
+
 
 CREATE TABLE renter_addresses (
   id SERIAL PRIMARY KEY,
@@ -162,14 +173,24 @@ CREATE TABLE bookings (
   FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE SET DEFAULT
 );
 
+create table agency_property(
+    property_id int NOT NULL,
+    agency_id int NOT NULL,
+    created_at timestamp DEFAULT now(),
+    updated_at timestamp DEFAULT now(),
+    FOREIGN KEY (agency_id) REFERENCES agencies(id) ON DELETE CASCADE,
+    FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE
+    
+);
 --keeps track of who updated what
 create table property_update_log(
-    property_id int,
-    agent_id int,
+    property_id int Not NULL,
+    agent_id int NOT Null,
     logged_at timestamp DEFAULT now(),
     foreign key (agent_id) references agents_profile(id) on delete cascade,
-    foreign key (property_id) references property(id) on delete cascade
+    foreign key (property_id) references properties(id) on delete cascade
 );
+
 
 
 
@@ -195,10 +216,15 @@ INSERT INTO renters_profile (id, move_in_date, preferred_location, budget)
 VALUES 
     (2, '1970-01-01', 'N/A', 0.00);
 
--- Agents profile placeholder
-INSERT INTO agents_profile (id, job_title, agency, contact_info) 
+-- Agencies placeholder for deleted accounts
+INSERT INTO agencies (agency_name, agency_email) 
 VALUES 
-    (1, 'Deleted', 'Deleted Account', 'deleted@domain.com');
+    ('Deleted Agency', 'deleted@domain.com'); -- 1
+
+-- Agents profile placeholder
+INSERT INTO agents_profile (id, job_title, agency_id, contact_info) 
+VALUES 
+    (1, 'Deleted', 1, 'deleted@domain.com');
 
 --Properties Place holder
 INSERT INTO properties (description, type, location, state, city, price, availability, crime_rates) 
@@ -221,7 +247,11 @@ INSERT INTO users (role, first_name, last_name, email) VALUES ('agent','Add','Na
 INSERT INTO renters_profile (id, move_in_date, preferred_location, budget) VALUES 
 (4, '2025-09-01', 'Chicago, IL', 2500.00),
 (5, '2025-10-15', 'Naperville, IL', 3000.00);
-INSERT INTO agents_profile (id, job_title, agency, contact_info) VALUES (3, 'Real Estate Agent', 'DreamHomes Realty', 'test@dreamhomes.com');                                                                        
+-- Agency for test agent
+INSERT INTO agencies (agency_name, agency_email) 
+VALUES 
+    ('DreamHomes Realty', 'info@dreamhomes.com'); -- 2
+INSERT INTO agents_profile (id, job_title, agency_id, contact_info) VALUES (3, 'Real Estate Agent', 2, 'test@dreamhomes.com');                                                                        
 INSERT INTO  renter_addresses (renter_id, street, city, state, zip) VALUES 
 (4, '123 State Street', 'Chicago', 'IL', '60616'),
 (5, '456 Oak Avenue', 'Naperville', 'IL', '60540');
@@ -319,10 +349,17 @@ INSERT INTO bookings (renter_id, property_id, start_date, end_date, payment_card
 (4, 9, '2026-05-01', '2026-11-01', 1, 13200.00, 'confirmed'), -- House (6 months)
 (4, 19, '2026-06-01', '2026-06-15', 1, 2400.00, 'pending'); -- Vacation home (2 weeks)
 
--- Update reward program for all renters with confirmed bookings
-INSERT INTO reward_program (renter_id, total_points) 
-SELECT renter_id, SUM(price) * 100 FROM bookings WHERE booking_status = 'confirmed' GROUP BY renter_id
-ON CONFLICT (renter_id) DO UPDATE SET 
-    total_points = (SELECT SUM(price) * 100 FROM bookings WHERE renter_id = reward_program.renter_id AND booking_status = 'confirmed'), 
-    updated_at = now();
+-- Agent-Property links for properties 1-25
+-- All properties assigned to DreamHomes Realty (agency_id 2)
+INSERT INTO agency_property (property_id, agency_id) VALUES
+-- Apartments (property_id 1-5)
+(1, 2), (2, 2), (3, 2), (4, 2), (5, 2),
+-- Houses (property_id 6-10)
+(6, 2), (7, 2), (8, 2), (9, 2), (10, 2),
+-- Commercial Buildings (property_id 11-15)
+(11, 2), (12, 2), (13, 2), (14, 2), (15, 2),
+-- Vacation Homes (property_id 16-20)
+(16, 2), (17, 2), (18, 2), (19, 2), (20, 2),
+-- Land (property_id 21-25)
+(21, 2), (22, 2), (23, 2), (24, 2), (25, 2);
 
