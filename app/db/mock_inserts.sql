@@ -309,3 +309,161 @@ INSERT INTO agency_property (property_id, agency_id) VALUES
 -- Agency 8: Commercial Real Estate Group - Land 90-101
 (90, 8), (91, 8), (92, 8), (93, 8), (94, 8), (95, 8), (96, 8), (97, 8), (98, 8), (99, 8), (100, 8), (101, 8);
 
+-- ============================================================================
+-- USERS (for renters - user_id starts from 22, since schema.sql has users 1-5 and mock_inserts has agents 6-21)
+-- ============================================================================
+INSERT INTO users (role, first_name, last_name, email) VALUES
+('renter', 'Alex', 'Martinez', 'alex.martinez@email.com'), -- 22
+('renter', 'Sophia', 'Lee', 'sophia.lee@email.com'), -- 23
+('renter', 'Ryan', 'Anderson', 'ryan.anderson@email.com'), -- 24
+('renter', 'Emma', 'Taylor', 'emma.taylor@email.com'), -- 25
+('renter', 'Noah', 'Brown', 'noah.brown@email.com'), -- 26
+('renter', 'Olivia', 'Garcia', 'olivia.garcia@email.com'), -- 27
+('renter', 'Liam', 'Wilson', 'liam.wilson@email.com'), -- 28
+('renter', 'Ava', 'Moore', 'ava.moore@email.com'), -- 29
+('renter', 'Ethan', 'Jackson', 'ethan.jackson@email.com'), -- 30
+('renter', 'Isabella', 'White', 'isabella.white@email.com'), -- 31
+('renter', 'Mason', 'Harris', 'mason.harris@email.com'), -- 32
+('renter', 'Mia', 'Clark', 'mia.clark@email.com'), -- 33
+('renter', 'James', 'Lewis', 'james.lewis@email.com'), -- 34
+('renter', 'Charlotte', 'Robinson', 'charlotte.robinson@email.com'), -- 35
+('renter', 'Benjamin', 'Walker', 'benjamin.walker@email.com'); -- 36
+
+-- ============================================================================
+-- RENTERS_PROFILE (matching users 22-36)
+-- ============================================================================
+INSERT INTO renters_profile (id, move_in_date, preferred_location, budget) VALUES
+(22, '2025-06-01', 'Miami, FL', 3500.00),
+(23, '2025-07-15', 'New York, NY', 4500.00),
+(24, '2025-08-01', 'Denver, CO', 2800.00),
+(25, '2025-09-01', 'Austin, TX', 3200.00),
+(26, '2025-10-01', 'Los Angeles, CA', 5000.00),
+(27, '2025-11-01', 'Boston, MA', 3800.00),
+(28, '2025-12-01', 'Atlanta, GA', 2500.00),
+(29, '2026-01-01', 'Charlotte, NC', 2200.00),
+(30, '2026-02-01', 'Phoenix, AZ', 2000.00),
+(31, '2026-03-01', 'Seattle, WA', 4200.00),
+(32, '2026-04-01', 'Las Vegas, NV', 1800.00),
+(33, '2026-05-01', 'Portland, OR', 3000.00),
+(34, '2026-06-01', 'Philadelphia, PA', 2400.00),
+(35, '2026-07-01', 'Detroit, MI', 1500.00),
+(36, '2026-08-01', 'Chicago, IL', 3500.00);
+
+-- ============================================================================
+-- RENTER_ADDRESSES (for renters 22-36)
+-- ============================================================================
+INSERT INTO renter_addresses (renter_id, street, city, state, zip) VALUES
+(22, '123 Ocean Drive', 'Miami', 'FL', '33139'),
+(23, '456 Broadway', 'New York', 'NY', '10013'),
+(24, '789 Mountain View', 'Denver', 'CO', '80202'),
+(25, '321 Music Lane', 'Austin', 'TX', '78701'),
+(26, '654 Sunset Blvd', 'Los Angeles', 'CA', '90028'),
+(27, '987 Beacon Street', 'Boston', 'MA', '02108'),
+(28, '147 Peachtree Street', 'Atlanta', 'GA', '30309'),
+(29, '258 Queen City Drive', 'Charlotte', 'NC', '28202'),
+(30, '369 Desert Road', 'Phoenix', 'AZ', '85004'),
+(31, '741 Space Needle Way', 'Seattle', 'WA', '98101'),
+(32, '852 Strip Avenue', 'Las Vegas', 'NV', '89101'),
+(33, '963 Rose Street', 'Portland', 'OR', '97204'),
+(34, '159 Liberty Bell Lane', 'Philadelphia', 'PA', '19106'),
+(35, '357 Motor City Drive', 'Detroit', 'MI', '48201'),
+(36, '468 Lake Shore Drive', 'Chicago', 'IL', '60611');
+
+-- ============================================================================
+-- CREDIT_CARDS (for renters 22-36, using their addresses as billing addresses)
+-- ============================================================================
+-- Note: billing_address_id starts from 4 (schema.sql has addresses 1-3)
+INSERT INTO credit_cards (renter_id, card_number, card_type, billing_address_id, expiration_month, expiration_year) VALUES
+(22, '4111111111111111', 'visa', 4, 12, 2026), -- billing_address_id 4 (renter 22)
+(23, '5555555555554444', 'mastercard', 5, 6, 2027), -- billing_address_id 5 (renter 23)
+(24, '4111111111112222', 'visa', 6, 9, 2026), -- billing_address_id 6 (renter 24)
+(25, '5555555555555555', 'mastercard', 7, 3, 2027), -- billing_address_id 7 (renter 25)
+(26, '4111111111113333', 'visa', 8, 11, 2026), -- billing_address_id 8 (renter 26)
+(27, '5555555555556666', 'mastercard', 9, 5, 2027), -- billing_address_id 9 (renter 27)
+(28, '4111111111114444', 'visa', 10, 8, 2026), -- billing_address_id 10 (renter 28)
+(29, '5555555555557777', 'mastercard', 11, 2, 2027), -- billing_address_id 11 (renter 29)
+(30, '4111111111115555', 'visa', 12, 7, 2026), -- billing_address_id 12 (renter 30)
+(31, '5555555555558888', 'mastercard', 13, 4, 2027), -- billing_address_id 13 (renter 31)
+(32, '4111111111116666', 'visa', 14, 10, 2026), -- billing_address_id 14 (renter 32)
+(33, '5555555555559999', 'mastercard', 15, 1, 2027), -- billing_address_id 15 (renter 33)
+(34, '4111111111117777', 'visa', 16, 6, 2026), -- billing_address_id 16 (renter 34)
+(35, '5555555555550000', 'mastercard', 17, 12, 2027), -- billing_address_id 17 (renter 35)
+(36, '4111111111118888', 'visa', 18, 9, 2026); -- billing_address_id 18 (renter 36)
+
+-- ============================================================================
+-- AGENT_ASSIGNED (linking renters to agents)
+-- ============================================================================
+INSERT INTO agent_assigned (agent_id, renter_id) VALUES
+-- Assigning renters to various agents across different agencies
+(6, 22), (7, 23), -- Premier Realty Group
+(8, 24), (9, 25), -- Elite Properties Inc
+(10, 26), (11, 27), -- Metro Real Estate Solutions
+(12, 28), (13, 29), -- Coastal Living Realty
+(14, 30), (15, 31), -- Urban Development Partners
+(16, 32), (17, 33), -- Luxury Homes Agency
+(18, 34), (19, 35), -- Affordable Housing Solutions
+(20, 36); -- Commercial Real Estate Group
+
+-- ============================================================================
+-- BOOKINGS (various bookings for renters 22-36 on properties 27-101)
+-- ============================================================================
+INSERT INTO bookings (renter_id, property_id, start_date, end_date, payment_card_id, price, booking_status) VALUES
+-- Note: payment_card_id starts from 4 (schema.sql has credit_cards 1-3)
+-- Renter 22 (Alex Martinez) - 3 bookings
+(22, 27, '2025-06-01', '2026-06-01', 4, 42000.00, 'confirmed'), -- Apartment (1 year)
+(22, 72, '2025-12-15', '2026-01-15', 4, 4500.00, 'pending'), -- Vacation home (1 month)
+(22, 88, '2026-02-01', '2026-08-01', 4, 18000.00, 'confirmed'), -- Land lease (6 months)
+-- Renter 23 (Sophia Lee) - 2 bookings
+(23, 28, '2025-07-15', '2026-07-15', 5, 38400.00, 'confirmed'), -- Apartment (1 year)
+(23, 57, '2026-01-01', '2026-12-31', 5, 300000.00, 'pending'), -- Commercial building (1 year)
+-- Renter 24 (Ryan Anderson) - 2 bookings
+(24, 29, '2025-08-01', '2026-02-01', 6, 14400.00, 'confirmed'), -- Apartment (6 months)
+(24, 73, '2025-11-01', '2025-12-01', 6, 3500.00, 'confirmed'), -- Vacation home (1 month)
+-- Renter 25 (Emma Taylor) - 3 bookings
+(25, 30, '2025-09-01', '2026-09-01', 7, 26400.00, 'confirmed'), -- Apartment (1 year)
+(25, 45, '2026-03-01', '2026-09-01', 7, 25200.00, 'pending'), -- House (6 months)
+(25, 89, '2026-06-01', '2026-12-01', 7, 28500.00, 'confirmed'), -- Land lease (6 months)
+-- Renter 26 (Noah Brown) - 2 bookings
+(26, 31, '2025-10-01', '2026-10-01', 8, 54000.00, 'confirmed'), -- Apartment (1 year)
+(26, 76, '2025-12-20', '2026-01-05', 8, 6000.00, 'confirmed'), -- Vacation home (2 weeks)
+-- Renter 27 (Olivia Garcia) - 2 bookings
+(27, 32, '2025-11-01', '2026-05-01', 9, 10800.00, 'confirmed'), -- Apartment (6 months)
+(27, 47, '2026-01-01', '2026-07-01', 9, 22800.00, 'pending'), -- House (6 months)
+-- Renter 28 (Liam Wilson) - 2 bookings
+(28, 33, '2025-12-01', '2026-06-01', 10, 16800.00, 'confirmed'), -- Apartment (6 months)
+(28, 48, '2026-02-01', '2026-08-01', 10, 16800.00, 'confirmed'), -- House (6 months)
+-- Renter 29 (Ava Moore) - 1 booking
+(29, 34, '2026-01-01', '2026-07-01', 11, 12000.00, 'confirmed'), -- Apartment (6 months)
+-- Renter 30 (Ethan Jackson) - 2 bookings
+(30, 35, '2026-02-01', '2026-08-01', 12, 9600.00, 'confirmed'), -- Apartment (6 months)
+(30, 52, '2026-04-01', '2026-10-01', 12, 10800.00, 'pending'), -- House (6 months)
+-- Renter 31 (Isabella White) - 2 bookings
+(31, 36, '2026-03-01', '2027-03-01', 13, 33600.00, 'confirmed'), -- Apartment (1 year)
+(31, 60, '2026-06-01', '2027-06-01', 13, 180000.00, 'pending'), -- Commercial building (1 year)
+-- Renter 32 (Mason Harris) - 1 booking
+(32, 37, '2026-04-01', '2026-10-01', 14, 7200.00, 'confirmed'), -- Apartment (6 months)
+-- Renter 33 (Mia Clark) - 2 bookings
+(33, 38, '2026-05-01', '2026-11-01', 15, 9000.00, 'confirmed'), -- Apartment (6 months)
+(33, 63, '2026-07-01', '2027-01-01', 15, 48000.00, 'pending'), -- Commercial building (6 months)
+-- Renter 34 (James Lewis) - 1 booking
+(34, 39, '2026-06-01', '2026-12-01', 16, 6600.00, 'confirmed'), -- Apartment (6 months)
+-- Renter 35 (Charlotte Robinson) - 1 booking
+(35, 40, '2026-07-01', '2027-01-01', 17, 5400.00, 'confirmed'), -- Apartment (6 months)
+-- Renter 36 (Benjamin Walker) - 2 bookings
+(36, 41, '2026-08-01', '2027-02-01', 18, 8400.00, 'confirmed'), -- Apartment (6 months)
+(36, 90, '2026-09-01', '2027-03-01', 18, 51000.00, 'pending'); -- Land lease (6 months)
+
+-- ============================================================================
+-- PROPERTY_UPDATE_LOG (tracking property updates by agents)
+-- ============================================================================
+INSERT INTO property_update_log (property_id, agent_id) VALUES
+-- Various property updates by different agents
+(27, 6), (28, 6), (29, 7), (30, 7), (31, 6),
+(36, 8), (37, 8), (38, 9), (39, 9), (40, 8),
+(42, 8), (43, 9), (44, 8), (45, 10), (46, 10),
+(54, 12), (55, 12), (56, 13), (57, 12), (58, 13),
+(63, 14), (64, 14), (65, 15), (66, 15), (67, 14),
+(72, 16), (73, 16), (74, 17), (75, 17), (76, 16),
+(81, 18), (82, 18), (83, 19), (84, 19), (85, 18),
+(90, 20), (91, 20), (92, 21), (93, 21), (94, 20);
+

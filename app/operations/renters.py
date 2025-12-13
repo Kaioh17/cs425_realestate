@@ -361,16 +361,25 @@ class Renter:
                 resp = Renter.query.select_all(query = select_sql, param = {"renter_id": renter_id})
 
                 if len(resp) == 0:
-                    print("Oops! You do not have any bookings yet!")
+                    print("\n" + "="*80)
+                    print(" " * 25 + "📋 MY BOOKINGS 📋")
+                    print("="*80)
+                    print("\n  😔 You do not have any bookings yet!")
+                    print("  Start booking properties to see them here!\n")
+                    print("="*80 + "\n")
                     return None
 
+                print("\n" + "="*80)
+                print(" " * 25 + "📋 MY BOOKINGS 📋")
+                print("="*80 + "\n")
                 df = pd.DataFrame(resp)
                 helper_service._Display.pretty_df(df=df, showindex=False)
                 print()
+                print("="*80 + "\n")
                 return(resp)
 
             except Exception as e:
-                print(f'Error: {e}')
+                print(f'\n  ❌ An error occurred: {e}\n')
                 raise e
             
     def cancel_booking(renter_id):
@@ -384,26 +393,26 @@ class Renter:
             # Filter to show only bookings that can be canceled
             active_bookings = [b for b in resp if b['booking_status'] != 'canceled']
             if len(active_bookings) == 0:
-                print(" No active bookings to cancel.\n")
+                print("\n  ⚠️  No active bookings to cancel.\n")
                 return 
             
-            print("-"*80)
+            print("\n" + "-"*80)
             booking_id = input("\n  Enter Booking ID to cancel (or press ENTER to go back): ").strip()
             
             if not booking_id:
-                print("\n Returning to menu...\n")
+                print("\n  ⬅️  Returning to menu...\n")
                 return
             
             # Verify the booking belongs to this renter and is not already canceled
             booking_ids = [str(b['booking_id']) for b in active_bookings]
             if booking_id not in booking_ids:
-                print("\n Invalid booking ID or booking already canceled.\n")
+                print("\n  ⚠️  Invalid booking ID or booking already canceled.\n")
                 return
             
             # Confirm cancellation
-            confirm = input(f"\n Are you sure you want to cancel booking #{booking_id}? [y/n]: ").lower()
+            confirm = input(f"\n  ⚠️  Are you sure you want to cancel booking #{booking_id}? [y/n]: ").lower()
             if confirm != 'y':
-                print("\n Cancellation aborted.\n")
+                print("\n  ⬅️  Cancellation aborted.\n")
                 return
             
             # Update booking status to canceled
@@ -415,13 +424,14 @@ class Renter:
             Renter.query._update(query=update_sql, param={"booking_id": int(booking_id), "renter_id": renter_id})
             
             print("\n" + "="*80)
-            print(" " * 25 + " BOOKING CANCELED ")
+            print(" " * 25 + "✅ BOOKING CANCELED ✅")
             print("="*80)
-            print(f"\n  Booking #{booking_id} has been canceled.")
-            print("Refund will be processed to your saved payment method.\n")
+            print(f"\n  Booking #{booking_id} has been canceled successfully.")
+            print("  💰 Refund will be processed to your saved payment method.\n")
+            print("="*80 + "\n")
             
         except Exception as e:
-            print(f'Error: {e}')
+            print(f'\n  ❌ An error occurred: {e}\n')
             raise e
     
     
@@ -446,41 +456,56 @@ class Renter:
                     case 'c':
                         Renter.cancel_booking(renter_id)
                     case _:
-                        print("\n Returning to main menu...\n")
+                        print("\n  ⬅️  Returning to main menu...\n")
                         break
                         
         except Exception as e:
-            print(f'Error: {e}')
+            print(f'\n  ❌ An error occurred: {e}\n')
             raise e
 
     def assign_agent(renter_id: int):
-        select_sql = "select id as agent_id from agents_profile"
-        response = helper_service.query_(Renter.db).select_all(query=select_sql)
-        helper_service._Display.pretty_df(response)
-        agent_ids = [response[i]["agent_id"] for i in range(len(response))]
-        agent_id =int(input("enter id of agent you want to use: "))
-        while not agent_id or agent_id not in agent_ids:
-            agent_id =input("enter valid id of agent you want to use: ")
+        try:
+            print("\n" + "="*80)
+            print(" " * 30 + "👤 ASSIGN AGENT 👤")
+            print("="*80)
+            print("\n  📋 Available Agents:\n")
+            select_sql = "select a.id as agent_id, first_name,last_name ,email from agents_profile a join users on users.id = a.id"
+            response = helper_service.query_(Renter.db).select_all(query=select_sql)
+            helper_service._Display.pretty_df(response)
+            print()
+            agent_ids = [response[i]["agent_id"] for i in range(len(response))]
+            agent_id = int(input("  Enter ID of agent you want to use: "))
+            while not agent_id or agent_id not in agent_ids:
+                agent_id = int(input("  ❌ Invalid ID. Enter a valid agent ID: "))
+                
+            insert_sql = "insert into agent_assigned(renter_id, agent_id) values (:renter_id, :agent_id)"
+            helper_service.query_(Renter.db)._insert(query=insert_sql,
+                                                     params={"renter_id":renter_id, "agent_id":agent_id})
             
-        insert_sql = "insert into agent_assigned(renter_id, agent_id) values (:renter_id, :agent_id)"
-        helper_service.query_(Renter.db)._insert(query=insert_sql,
-                                                 params={"renter_id":renter_id, "agent_id":agent_id})
-        
-        print(f"you are now assigned to {agent_id}")
+            agent_name = f"{response[agent_ids.index(agent_id)]['first_name']} {response[agent_ids.index(agent_id)]['last_name']}"
+            print("\n" + "="*80)
+            print(" " * 25 + "✅ AGENT ASSIGNED SUCCESSFULLY ✅")
+            print("="*80)
+            print(f"\n  You are now assigned to Agent #{agent_id}: {agent_name}\n")
+            print("="*80 + "\n")
+        except Exception as e:
+            print(f'\n  ❌ An error occurred: {e}\n')
+            raise e
     def get_agent_info(renter_id):
         try:
             select_sql = "select a.agency_id, aa.agent_id from agent_assigned aa join agents_profile a on  a.id = aa.agent_id where renter_id = :renter_id"
             response = helper_service.query_(Renter.db).select_all(query = select_sql,param={"renter_id": renter_id})
             if response == []:
-                print("you are not assigned to an agent!!!")
-                ans = input("Would you like to select an agent: [y|n] ")
-                if ans == 'y':
-                    return Renter.assign_agent 
-                return
+                print("\n  ⚠️  You are not assigned to an agent yet.\n")
+                ans = input("  Would you like to select an agent? [y/n]: ")
+                if ans.lower() == 'y':
+                    return Renter.assign_agent(renter_id=renter_id)
+                else: 
+                    return None
             agent_info = response[0]
-            
             return agent_info
         except Exception as e:
+            print(f'\n  ❌ An error occurred: {e}\n')
             raise e
     def cli():
         """
@@ -516,7 +541,7 @@ class Renter:
                         b=False
                     case '2': 
                         Renter.create_renters()
-                        token_created = 'token'
+                        # token_created = 'token'
                         b=True
                     case _:
                         print('\n  ❌ Invalid choice. Please select 1 or 2.\n')
@@ -527,9 +552,7 @@ class Renter:
             print(f"{'='*80}\n")
             
             booking = Booking(get_db=Renter.db_gen, db=Renter.db, id=renter_id)
-            agent_info = Renter.get_agent_info(renter_id=renter_id)
-            agent_id = agent_info["agent_id"]
-            agency_id = agent_info["agency_id"]
+            
             while token_created == 'token':
                 print("\n" + "="*80)
                 print(" " * 35 + "🏠  MAIN MENU")
@@ -596,19 +619,18 @@ class Renter:
                             case _:
                                 print("\n  ⬅️  Returning to main menu...\n")
                     case 'p':
-                        
+                        agent_info = Renter.get_agent_info(renter_id=renter_id)
+                        agent_id = agent_info["agent_id"]
+                        agency_id = agent_info["agency_id"]
                         Properties(db=Renter.db, db_gen=Renter.db_gen, agent_id=agent_id, agency_id=agency_id).cli(role=role)
                     case 'r':
-                        print('Here is your reward so far...')
                         Renter.get_rewards(renter_id)
                     case 'b':
-                        print('Here are your current bookings...')
                         Renter.manage_bookings(renter_id)
                     case 'bn':
                         print()
                         booking.book_cli(renter_email=email)
                     case '5':
-                        print("Agent asigned")
                         Renter.assign_agent(renter_id=renter_id)
                     
         except Exception as e:

@@ -20,15 +20,12 @@ import pandas as pd
 """
 """ **Add/Delete/Modify properties** (agents)"""
 class Properties: 
-    def __init__(self, db_gen, db, agency_id, agent_id):
+    def __init__(self, db_gen, db, agency_id):
         self.db_gen = db_gen    
         self.db = db 
         self.agency_id = agency_id
-        self.agent_id = agent_id
         
-        
-        
-    joint_to_agencies = " join agency_property as a on a.property_id  = p.id "
+    joint_to_agencies = "join agencies as a on a.property_id  = p.id"
     allowed_types = ['vacation_homes', 'land', 'apartments', 'commercial_buildings', 'houses']
     display = {
                 "vacation_homes": "num_rooms, sqr_footage",
@@ -84,7 +81,7 @@ class Properties:
             order_clause = f", ".join(order_by) if order_by else ""
             order_stmt = f" order by {order_clause}" if order_by else ""
         
-            select_sql = f"select {self.property},{self.display[type]} from properties p {self.joint_to_agencies} join {type} on {type}.property_id = p.id {where_clause} {order_stmt}"
+            select_sql = f"select {self.property},{self.display[type]} join {type} on {type}.property_id = properties.id {where_clause} {order_stmt}"
             resp = query_(db=self.db).select_all(query=select_sql, param=params)
             # pd.options.display.float_format = '{:,.2f}'.format
             
@@ -133,8 +130,7 @@ class Properties:
             type_columns_str = ", ".join(type_columns)
                 
             # print(prop_param_placeholders)  
-            # verify = self._verify_agency(property_id = id)    
-            
+               
             print("")
             # param = prop_params | type_params
             # print(param)
@@ -142,9 +138,8 @@ class Properties:
             type_values_str = ", ".join(type_param_placeholders)
             
             insert_sql = f"insert into properties ({prop_columns_str}) values ({prop_values_str}) returning id"
-            
             insert_sql2 = f"insert into {type} (property_id, {type_columns_str}) values (:property_id, {type_values_str})"""
-            insert_sql3 = f"insert into agency_property (property_id, agency_id) values (:property_id, :agency_id)"
+            
             
             try:
                 resp = self.db.execute(text(insert_sql), prop_params) ##to properties
@@ -154,19 +149,15 @@ class Properties:
                 type_params['property_id'] = prop_id
                 self.db.execute(text(insert_sql2), type_params)
                 
-                query_(self.db)._insert(query=insert_sql3,
-                                        params={"property_id":prop_id, "agency_id":self.agency_id},
-                                        no_commit=True)
-                
             except Exception as e:
-                print(f"Rollback occured as {e}")
+                print(f"\n  ❌ Rollback occurred: {e}\n")
                 self.db.rollback()
             
         except Exception as e:
             raise e
         finally:
             self.db.commit()
-            print("Insert successfull")
+            print("\n  ✅ Property inserted successfully!\n")
             
             self._get_property_data(type, prop_id)
     
@@ -207,8 +198,7 @@ class Properties:
         prop_dict['state'] = input("  🗺️  State (e.g. IL, AZ): ") or 'IL'
         prop_dict['city'] = input("  🏙️  City: ") or 'Chicago'
         prop_dict['price'] = float(input("  💰 Price: $") or 321432.0)
-        availability = prop_dict['availability'] = input("  ✅ Availability (True/False): ") or 'True'
-        availability = True if availability.lower() == "true" else False
+        prop_dict['availability'] = (input("  ✅ Availability (True/False): ") or '').lower() == 'true'
         crime_rates = prop_dict['crime_rates'] = input(f"  🚨 Crime rates ({', '.join(crime_rates_lst)}): ").capitalize() or 'High'
         while crime_rates is None or crime_rates not in crime_rates_lst:
             print("  ⚠ Invalid crime rate. Please try again.")
@@ -233,9 +223,7 @@ class Properties:
                 house_dict['num_rooms'] = int(input("  🛏️  Number of rooms: ") or 2)
                 house_dict['sqr_footage'] = float(input("  📐 Square footage: ") or 2)
                 house_dict['rental_price'] = float(input("  💵 Rental price: $") or 2)
-                availability = house_dict['availability'] = input("  ✅ Availability (True/False): ").lower() or "true"
-                availability = True if availability.lower() == "true" else False
-                
+                house_dict['availability'] = input("  ✅ Availability (True/False): ").lower() or "true"
                 house_dict['nearby_schools'] = input("  🎓 Nearby schools: ").capitalize() or 'Kenwood High School'
 
             case 'commercial_buildings':
@@ -274,29 +262,30 @@ class Properties:
             print("\n" + "="*80)
             print(" " * 25 + "🗑️  DELETE PROPERTY 🗑️")
             print("="*80)
-            
-            print(" | ".join([f"[{t}]"+self.allowed_types[t].replace('_', ' ').title() for t in range(len(self.allowed_types))]))
-            print("[q] quit")
-            type = input('Property type or all: ').lower()
+            print("\n  Available property types:")
+            print("  " + " | ".join([f"[{t}] "+self.allowed_types[t].replace('_', ' ').title() for t in range(len(self.allowed_types))]))
+            print("  [q] Quit")
+            print()
+            print("-"*80)
+            type = input("\n  Property type or all: ").lower()
             if type == 'q':
                 return
             if type and type.isdigit():
                 type = self.allowed_types[int(type)]
                 
-            type_data = self._get_property_data(type=type)
-            type_id = [type_data[t]['id'] for t in range(len(type_data))]
-            print(type_id)
+            self._get_property_data(type=type)
+
+            
             # helper_service._Display.pretty_df(response)
             print()
             
             prop_id = input("  Enter property ID to delete: ").strip()
-            # response = query_(self.db).select_all(query="select id from properties where id = :id", param={"id": prop_id})
-            response = self._verify_agency(property_id= prop_id)
-            print(response)
-            if len(response) == 0 or int(prop_id) not in type_id:
-                print("\n" + "="*40)
+            response = query_(self.db).select_all(query="select id from properties where id = :id", param={"id": prop_id})
+            
+            if len(response) == 0:
+                print("\n" + "⚠"*40)
                 print("  ⚠ Property ID not found in database!")
-                print("="*40 + "\n")
+                print("⚠"*40 + "\n")
                 ans = input("  Would you like to try entering a correct ID again? [y|n]: ").lower()
                 if ans == 'y':
                     return self.del_properties()
@@ -310,8 +299,6 @@ class Properties:
             if verify == 'y':
                 delete_sql = """delete from properties where id = :id"""
                 query_(self.db)._delete_by(query=delete_sql, param={'id': prop_id})
-
-                
                 print("\n" + "="*80)
                 print(" " * 30 + "✅ Property Deleted Successfully!")
                 print("="*80 + "\n")
@@ -323,12 +310,7 @@ class Properties:
                 return 
         except Exception as e:
             raise e
-    def _verify_agency(self, property_id:int):
-        
-        select_sql = "select property_id from agency_property where property_id = :property_id and agency_id = :agency_id"
-        repsonse = query_(self.db).select_all(select_sql, param={"property_id": property_id,  "agency_id": self.agency_id})
-        return repsonse
-    def update_properties(self, dict, id, type_ids):
+    def update_properties(self, dict, id):
         try:
             type = dict['properties']['type']
             place_holders=[]
@@ -345,30 +327,22 @@ class Properties:
                     type_place_holders.append(f"{k} = :{k}")
                     type_param[k] = v
 
-            verify = self._verify_agency(property_id = id)    
-            
-            if len(verify) == 0 or int(id) not in type_ids:
-                print("This property is not in your agency")
-                return self.update_properties(dict,id)
-            
+                
+              
             place_holders = ", ".join(place_holders)
             type_place_holders = ", ".join(type_place_holders)
             update_sql=f"update properties set {place_holders}  where id = {id}"
             type_update_sql=f"update {type} set {type_place_holders}  where property_id = {id}"
             
-            if param != {}:
-                query_(db=self.db)._update(query=update_sql, param=param)
-            if type_param != {}:
-                query_(db=self.db)._update(query=type_update_sql, param=type_param) 
+        
+            query_(db=self.db)._update(query=update_sql, param=param)
+            query_(db=self.db)._update(query=type_update_sql, param=type_param)
             
-            
-
             self._get_property_data(type, id=id)
-            insert_sql = "insert into property_update_log(property_id, agent_id) values(:property_id, :agent_id)"
-            query_(db=self.db)._insert(query=insert_sql, params={"property_id":id,"agent_id":self.agent_id})
+            
         except Exception as e:
             raise e
-    def update_properties_print(self):
+    def update_properties_print(self, agent_id):
         """properties details"""
         dict = {}
         crime_rates_lst = ['Low', 'High', 'Medium']
@@ -398,12 +372,11 @@ class Properties:
             type = prop_dict['type'] = input("  * Enter a valid type: ").lower() or None
         if type and type.isdigit():
             type = prop_dict['type'] = self.allowed_types[int(type)]
-        type_data = self._get_property_data(type=type)
-        type_id = [type_data[t]['id'] for t in range(len(type_data))]
+        self._get_property_data(type=type)
         
         print()
         
-        id = input(f"Property id: ")
+        id = input("  Property ID: ")
         # General property information
         print("\n" + "-"*80)
         print(" " * 20 + "Step 2: General Property Information")
@@ -415,9 +388,6 @@ class Properties:
         price_input = input("  💰 Price: $") or None
         prop_dict['price'] = float(price_input) if price_input else None
         availability_input = input("  ✅ Availability (True/False): ") or None
-        if availability_input:
-            availability_input = True if availability_input.lower() == "true" else False
-
         prop_dict['availability'] = availability_input.lower() == 'true' if availability_input else None
         crime_rates = prop_dict['crime_rates'] = input(f"  🚨 Crime rates ({', '.join(crime_rates_lst)}): ").capitalize() or None
         while crime_rates is not None and crime_rates not in crime_rates_lst:
@@ -454,8 +424,6 @@ class Properties:
                 rental_price_input = input("  💵 Rental price: $") or None
                 house_dict['rental_price'] = float(rental_price_input) if rental_price_input else None
                 availability_input = input("  ✅ Availability (True/False): ") or None
-                if availability_input:
-                    availability_input = True if availability_input.lower() == "true" else False
                 house_dict['availability'] = availability_input.lower() if availability_input else None
                 house_dict['nearby_schools'] = input("  🎓 Nearby schools: ") or None
                 if house_dict['nearby_schools']:
@@ -488,11 +456,11 @@ class Properties:
                     land_dict['sqr_footage'] = None
         
         print("\n" + "="*80)
-        print(" " * 30 + "✅ Property updated Successfully!")
+        print(" " * 30 + "✅ Property Added Successfully!")
         print("="*80 + "\n")
 
             
-        return self.update_properties(dict, id=id, type_ids = type_id)
+        return self.update_properties(dict, id=id)
     def list_all_properties(self):
         try:
             print("\n" + "="*80)
@@ -514,7 +482,7 @@ class Properties:
                     print("-"*80 + "\n")
                     # For "all", we need to handle multiple property types
                     # This is a simplified version - you may want to union all types
-                    limit = input("Would you like to enter a limit['n' if no | Enter the limit]: ")
+                    limit = input("  Would you like to enter a limit? ['n' if no | Enter the limit]: ")
                     
                     # select_sql = f"select {self.property} from properties"
                     # response = query_(db=self.db).select_all(query=select_sql, limit=limit)
@@ -550,19 +518,20 @@ class Properties:
                         helper_service._Display.pretty_df(response)
                         print("\n" + "="*80 + "\n")
                     else:
-                        print(f"  No {type.replace('_', ' ')} properties found.\n")
+                        print(f"\n  ⚠️  No {type.replace('_', ' ')} properties found.\n")
+                        print("="*80 + "\n")
                         
                 case "s":
                     self.filter_prints()
                 case "id":
-                    id = input("Enter property id: ")
+                    id = input("  Enter property ID: ")
                     self._get_property_data(id=id)
                 case "b":
                     return
                 case _:
                     print("\n  ⚠  Invalid option. Please try again.\n")
                     self.list_all_properties()
-            cont = input("Do you want to list again: [y|n]").lower()
+            cont = input("\n  Do you want to list again? [y/n]: ").lower()
             
             if cont == "y":
                 self.list_all_properties()
@@ -691,20 +660,18 @@ class Properties:
             type: property type"""
         
         if id and type:
-            response =  query_(db = self.db).select_all(query=f"select {self.property}, {self.display[type]} from properties p {self.joint_to_agencies} join {type} as t on p.id = t.property_id where id=:id and agency_id = :agency_id", param={"id":id, "agency_id": self.agency_id}, limit=limit)
-           
+            response =  query_(db = self.db).select_all(query=f"select {self.property}, {self.display[type]} from properties p join agencies as a on a.property_id  = p.id join {type} as t on p.id = t.property_id where id=:id and agency_id = :agency_id", param={"id":id, "agency_id": self.agency_id}, limit=limit)
             print("\n" + "-"*80)
             print(" " * 30 + "Property")
             print("-"*80 + "\n")
         elif type:
-            response =  query_(db = self.db).select_all(query=f"select id, {self.property}, {self.display[type]} from properties p {self.joint_to_agencies} join {type} as t on p.id = t.property_id where type=:type and agency_id = :agency_id",
+            response =  query_(db = self.db).select_all(query=f"select id, {self.property}, {self.display[type]} from properties p join {type} as t on p.id = t.property_id where type=:type and agency_id = :agency_id",
                                                         param={"type": type, "agency_id": self.agency_id}, limit=limit)
             print("\n" + "-"*80)
             print(" " * 30 + f"{type} Properties")
             print("-"*80 + "\n")
         elif id:
-            response =  query_(db = self.db).select_all(query=f"select {self.property} from properties p {self.joint_to_agencies} where id=:id and agency_id = :agency_id", param={"id":id, "agency_id": self.agency_id}, limit=limit)
-            
+            response =  query_(db = self.db).select_all(query=f"select {self.property} from properties where id=:id and agency_id = :agency_id", param={"id":id, "agency_id": self.agency_id}, limit=limit)
             print("\n" + "-"*80)
             print(" " * 30 + "Property")
             print("-"*80 + "\n")
@@ -712,7 +679,7 @@ class Properties:
             for t in self.allowed_types:
                 # print(f"select {self.property}, {self.display[t]} from properties p join {t} as t on p.id = t.property_id")
 
-                response =  query_(db = self.db).select_all(query=f"select {self.property}, {self.display[t]} from properties p {self.joint_to_agencies} join {t} as t on p.id = t.property_id where agency_id = :agency_id",
+                response =  query_(db = self.db).select_all(query=f"select {self.property}, {self.display[t]} from properties p join {t} as t on p.id = t.property_id where agency_id = :agency_id",
                                                             param={"agency_id": self.agency_id}, limit=limit)
                 print("\n" + "-"*80)
                 print(" " * 30 + f"{t} Property")
@@ -721,16 +688,17 @@ class Properties:
                     helper_service._Display.pretty_df(response)
                     print("\n" + "="*80 + "\n")
                     
-                else: print(f"   No data for {t}")
+                else: 
+                    print(f"  ⚠️  No data for {t.replace('_', ' ').title()}\n")
             return
                 
         
         if response:
             helper_service._Display.pretty_df(response)
             print("\n" + "="*80 + "\n")
-            return response
         else:
-            print("  No properties found.\n")
+            print("\n  ⚠️  No properties found.\n")
+            print("="*80 + "\n")
     def cli(self, role):
         try:
             live = True
@@ -745,7 +713,7 @@ class Properties:
                     print("    [d] Delete property")
                     print("    [a] Add new property")
                     print("    [u] Update a property")
-                print("    [l] List all property") 
+                    print("    [l] List all property") 
                      
                 print("    [s] Search our property library")
                 print("    [q] Quit")
@@ -755,7 +723,7 @@ class Properties:
                 
                 match ans:
                     case 'q':
-                        print("\n  Thank you for using our property search system. Goodbye!\n")
+                        print("\n  ✅ Thank you for using our property search system. Goodbye! 👋\n")
                         break
                     case 's':
                         self.filter_prints()
@@ -766,7 +734,7 @@ class Properties:
                     case 'l':
                         self.list_all_properties()
                     case 'u':
-                        self.update_properties_print()
+                        self.update_properties_print(agent_id=None)
                     case _:
                         print("\n  ⚠ Invalid option. Please try again.\n")
                         
