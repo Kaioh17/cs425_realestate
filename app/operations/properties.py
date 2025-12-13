@@ -27,6 +27,7 @@ class Properties:
         self.agent_id = agent_id
         
         
+        
     joint_to_agencies = " join agency_property as a on a.property_id  = p.id "
     allowed_types = ['vacation_homes', 'land', 'apartments', 'commercial_buildings', 'houses']
     display = {
@@ -744,7 +745,7 @@ class Properties:
                     print("    [d] Delete property")
                     print("    [a] Add new property")
                     print("    [u] Update a property")
-                    print("    [l] List all property") 
+                print("    [l] List all property") 
                      
                 print("    [s] Search our property library")
                 print("    [q] Quit")

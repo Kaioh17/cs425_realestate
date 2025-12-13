@@ -20,28 +20,33 @@ from .helper_service import query_
 import pandas as pd
 from datetime import date, datetime
 from .properties import Properties
-from .renters import Renter
 
 
 
 class Booking:
-    db_gen = get_db()
-    db = next(db_gen)
-    query = query_(db)
-
-    def mask_card(card_number: str):
+    # db_gen = get_db()
+    # db = next(db_gen)
+    # id = 4
+    
+    def __init__(self, get_db, db, id):
+        self.id = id
+        self.db = db
+        self.get_db = get_db
+        self.query = query_(db)
+        
+    def mask_card(self, card_number: str):
         return f"**** **** **** {card_number[-4:]}"
 
-    def _months_between(start: date, end: date) -> int:
+    def _months_between(self, start: date, end: date) -> int:
         months = (end.year - start.year) * 12 + (end.month - start.month)
         if end.day < start.day:
             months -= 1
         return max(1, months)
 
-    def _get_monthly_rate(property_id: int) -> float:
+    def _get_monthly_rate(self, property_id: int) -> float:
         # determine property type
         select_sql = "select id, type, price from properties where id = :id"
-        resp = Booking.query.select_all(query=select_sql, param={"id": property_id})
+        resp = self.query.select_all(query=select_sql, param={"id": property_id})
         if len(resp) == 0:
             raise ValueError('Property not found')
         prop = resp[0]
@@ -49,27 +54,41 @@ class Booking:
         # Try to pull rental_price from related type table
         if ptype in ['apartments', 'houses', 'commercial_buildings']:
             sel = f"select rental_price from {ptype} where property_id = :id"
-            r = Booking.query.select_all(query=sel, param={"id": property_id})
+            r = self.query.select_all(query=sel, param={"id": property_id})
             if len(r) > 0 and r[0].get('rental_price') is not None:
                 return float(r[0]['rental_price'])
         # fallback to properties.price
         return float(prop['price'])
 
-    def book_cli():
+    def book_cli(self, renter_email):
+        from .renters import Renter
+        
         try:
             print("\n" + "="*80)
             print(" " * 30 + "📅 MAKE A BOOKING 📅")
             print("="*80)
 
-            email = input("  Enter your email (for renter lookup) [rentertest@gmail.com]: ") or 'rentertest@gmail.com'
-            user = Booking.query.select_all(query="select * from users where email = :email", param={"email": email})
-            if len(user) == 0:
-                print("\n  ⚠️  No renter found with that email. Please create an account first.\n")
-                return
-            renter_id = user[0]['id']
-
+            # email = input("  Enter your email (for renter lookup) [rentertest@gmail.com]: ") or 'rentertest@gmail.com'
+            # email = renter_email
+            # user = self.query.select_all(query="select * from users where email = :email", param={"email": email})
+            # if len(user) == 0:
+            #     print("\n  ⚠️  No renter found with that email. Please create an account first.\n")
+            #     return
+            # renter_id = user[0]['id']
+            renter_id = self.id
             # Show available properties
-            Properties(db=Booking.db, db_gen=Booking.db_gen)._get_property_data()
+            select_sql = "select a.agency_id, aa.agent_id from agent_assigned aa join agents_profile a on  a.id = aa.agent_id where renter_id = :renter_id"
+            response = query_(self.db).select_all(query = select_sql,param={"renter_id": renter_id})
+            if response == []:
+                print("you are not assigned to an agent!!!")
+                return 
+            agent_id = response[0]["agent_id"]
+            agency_id = response[0]["agency_id"]
+            
+            Properties(db=self.db, 
+                       db_gen=self.get_db, 
+                       agency_id=agency_id,
+                       agent_id=agent_id)._get_property_data()
 
             prop_id_raw = input("  Enter property ID to book: ")
             if not prop_id_raw or not prop_id_raw.isdigit():
@@ -91,13 +110,13 @@ class Booking:
                 return
 
             # Payment methods
-            cards = Booking.query.select_all(query="select id, card_number, card_type from credit_cards where renter_id = :renter_id", param={"renter_id": renter_id})
+            cards = self.query.select_all(query="select id, card_number, card_type from credit_cards where renter_id = :renter_id", param={"renter_id": renter_id})
             if len(cards) == 0:
                 print("\n  ⚠ No payment methods found. Please add a card first.\n")
                 ans = input("  Would you like to add a card now? [y/n]: ")
                 if ans.lower() == 'y':
-                    Renter.add_card(email, renter_id)
-                    cards = Booking.query.select_all(query="select id, card_number, card_type from credit_cards where renter_id = :renter_id", param={"renter_id": renter_id})
+                    Renter.add_card(renter_email, renter_id)
+                    cards = self.query.select_all(query="select id, card_number, card_type from credit_cards where renter_id = :renter_id", param={"renter_id": renter_id})
                 else:
                     return
 
@@ -118,8 +137,8 @@ class Booking:
                 return
 
             # compute pricing (monthly)
-            months = Booking._months_between(start_date, end_date)
-            monthly_rate = Booking._get_monthly_rate(property_id=property_id)
+            months = self._months_between(start_date, end_date)
+            monthly_rate = self._get_monthly_rate(property_id=property_id)
             total = round(months * monthly_rate, 2)
 
             # persist booking
@@ -133,9 +152,9 @@ class Booking:
                 'price': total,
                 'booking_status': 'pending'
             }
-            resp = Booking.query._insert(query=insert_sql, params=params)
-            booking_id = resp.scalar() if resp is not None else None
-
+            resp = self.query._insert(query=insert_sql, params=params)
+            # booking_id = resp.scalar() if resp is not None else None
+            booking_id = resp
             # display booking details
             details = [{
                 'booking_id': booking_id,
@@ -145,10 +164,10 @@ class Booking:
                 'months': months,
                 'monthly_rate': monthly_rate,
                 'total_cost': total,
-                'payment_method': f"{chosen['card_type'].upper()} {Booking.mask_card(chosen['card_number'])}",
+                'payment_method': f"{chosen['card_type'].upper()} {self.mask_card(chosen['card_number'])}",
                 'status': 'pending'
             }]
-            print(details)
+            
             df = pd.DataFrame(details)
             print("\n" + "-"*80)
             print("  ✅ Booking created — details below:")
@@ -159,6 +178,3 @@ class Booking:
         except Exception as e:
             print(f"\n  ❌ An error occurred while creating booking: {e}\n")
             raise e
-
-if __name__ == '__main__':
-    Booking.book_cli()

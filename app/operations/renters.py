@@ -18,6 +18,7 @@ Responsibilities:
 from app.db.connect import get_db
 from sqlalchemy import text
 from . import helper_service
+from .booking import Booking
 import pandas as pd 
 from .properties import Properties
 
@@ -60,7 +61,7 @@ class Renter:
             sql = 'insert into users (role, first_name,last_name, email) values (:role, :first_name, :last_name, :email) returning id'
             
             result = Renter.query._insert(query=sql, params=to_dict['user'])
-            user_id = result.scalar()
+            user_id = result
             # print(f"result: {user_id}")
             to_dict['renter']['id'] = user_id
             sql_agent = 'insert into renters_profile (id, move_in_date, preferred_location, budget) values (:id, :move_in_date, :preferred_location, :budget)'
@@ -452,6 +453,35 @@ class Renter:
             print(f'Error: {e}')
             raise e
 
+    def assign_agent(renter_id: int):
+        select_sql = "select id as agent_id from agents_profile"
+        response = helper_service.query_(Renter.db).select_all(query=select_sql)
+        helper_service._Display.pretty_df(response)
+        agent_ids = [response[i]["agent_id"] for i in range(len(response))]
+        agent_id =int(input("enter id of agent you want to use: "))
+        while not agent_id or agent_id not in agent_ids:
+            agent_id =input("enter valid id of agent you want to use: ")
+            
+        insert_sql = "insert into agent_assigned(renter_id, agent_id) values (:renter_id, :agent_id)"
+        helper_service.query_(Renter.db)._insert(query=insert_sql,
+                                                 params={"renter_id":renter_id, "agent_id":agent_id})
+        
+        print(f"you are now assigned to {agent_id}")
+    def get_agent_info(renter_id):
+        try:
+            select_sql = "select a.agency_id, aa.agent_id from agent_assigned aa join agents_profile a on  a.id = aa.agent_id where renter_id = :renter_id"
+            response = helper_service.query_(Renter.db).select_all(query = select_sql,param={"renter_id": renter_id})
+            if response == []:
+                print("you are not assigned to an agent!!!")
+                ans = input("Would you like to select an agent: [y|n] ")
+                if ans == 'y':
+                    return Renter.assign_agent 
+                return
+            agent_info = response[0]
+            
+            return agent_info
+        except Exception as e:
+            raise e
     def cli():
         """
         Interactive CLI for renter account management.
@@ -495,7 +525,11 @@ class Renter:
             print(f"\n{'='*80}")
             print(f" " * 25 + f"👋 Welcome back, {email}! 🌟")
             print(f"{'='*80}\n")
-                
+            
+            booking = Booking(get_db=Renter.db_gen, db=Renter.db, id=renter_id)
+            agent_info = Renter.get_agent_info(renter_id=renter_id)
+            agent_id = agent_info["agent_id"]
+            agency_id = agent_info["agency_id"]
             while token_created == 'token':
                 print("\n" + "="*80)
                 print(" " * 35 + "🏠  MAIN MENU")
@@ -504,9 +538,13 @@ class Renter:
                 print("    [1] Payment Management")
                 print("    [2] Address Management")
                 print("    [b] Manage Bookings")
-                print("    [e] Edit Profile")
+                # print("    [e] Edit Profile")
                 print("    [r] See reward points")
                 print("    [p] Browse Properties")
+                print("    [bn] Start new Bookings")
+                print("    [5] Assign Agent")
+                
+                
                 print("    [q] Quit")
                 print()
                 print("-"*80)
@@ -558,15 +596,21 @@ class Renter:
                             case _:
                                 print("\n  ⬅️  Returning to main menu...\n")
                     case 'p':
-                        Properties(db=Renter.db, db_gen=Renter.db_gen).cli(role=role)
+                        
+                        Properties(db=Renter.db, db_gen=Renter.db_gen, agent_id=agent_id, agency_id=agency_id).cli(role=role)
                     case 'r':
                         print('Here is your reward so far...')
                         Renter.get_rewards(renter_id)
                     case 'b':
                         print('Here are your current bookings...')
                         Renter.manage_bookings(renter_id)
+                    case 'bn':
+                        print()
+                        booking.book_cli(renter_email=email)
+                    case '5':
+                        print("Agent asigned")
+                        Renter.assign_agent(renter_id=renter_id)
                     
-                        
         except Exception as e:
             print(f'\n  ❌ An error occurred: {e}\n')
             raise e

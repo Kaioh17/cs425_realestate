@@ -45,64 +45,78 @@ class Agent:
         except Exception as e:
             raise e
     def create_agent(self):
-        print("\n" + "="*80)
-        print(" " * 25 + "👤 AGENT SIGN UP 👤")
-        print("="*80)
-        print("\n  Welcome! Let's create your agent account.\n")
-        role = 'agent'
-        first_name = input("  📝 First name: ")
-        last_name = input("  📝 Last name: ")
-        email:EmailStr = input("  📧 Email: ")
-        job_title = input("  💼 Job title: ")
-        print("  🏢Enter Agency you will be joining [or else you want to create a new agency they  [y]]: ")
-        agency = d.input(   "")
-        if agency != "y":
-            agency_response = self.query.select_all(query="select id from agencies where agency_name = :agency_name ", param={"agency_name": agency})
-            agency_id = agency_response[0]['id']
-        if agency == "y":
-            agency_id = self.add_agency()
-        
-        contact_info = input("  📞 Contact info: ")
-        
-        
-        to_dict={'user': {'role': role or 'agent',
-                'first_name': first_name.capitalize() or 'James',
-                'last_name': last_name.capitalize() or 'Lucky',
-                'email': email or 'lucky@gmail.com'},
-                'agent': {'id': 0,
-                                'job_title': job_title or 'agent',
-                            'agency_id': agency_id,
-                            'contact_info': contact_info or '775-342-2323'}}
+        try:
+            # from  import Renter
+            print("\n" + "="*80)
+            print(" " * 25 + "👤 AGENT SIGN UP 👤")
+            print("="*80)
+            print("\n  Welcome! Let's create your agent account.\n")
+            
+            select_sql = "select agency_name from agencies"
+            resp = self.query.select_all(select_sql)
+            if resp == []:
+                print("There are no agencies to join...")
+                ans = input("would you like to create yours: [y|n] ")
+                if ans.lower() == "y":
+                    return self.add_agency()
+            role = 'agent'
+            first_name = input("  📝 First name: ")
+            last_name = input("  📝 Last name: ")
+            email:EmailStr = input("  📧 Email: ")
+            job_title = input("  💼 Job title: ")
+            helper_service._Display.pretty_df(resp)
+            print("  🏢Enter Agency you will be joining [or else you want to create a new agency they  [y]]: ")
+            agency = d.input(   "")
+            if agency != "y":
+                agency_response = self.query.select_all(query="select id from agencies where agency_name = :agency_name ", param={"agency_name": agency})
+                agency_id = agency_response[0]['id']
+            if agency == "y":
+                agency_id = self.add_agency()
+            
+            contact_info = input("  📞 Contact info: ")
+            
+            
+            to_dict={'user': {'role': role or 'agent',
+                    'first_name': first_name.capitalize() or 'James',
+                    'last_name': last_name.capitalize() or 'Lucky',
+                    'email': email or 'lucky@gmail.com'},
+                    'agent': {'id': 0,
+                                    'job_title': job_title or 'agent',
+                                'agency_id': agency_id,
+                                'contact_info': contact_info or '775-342-2323'}}
 
-        # print(to_dict)
-        # user_model = UserCreate(to_dict)
-        # Agent.create_agent(to_dict)
-        
+            # print(to_dict)
+            # user_model = UserCreate(to_dict)
+            # Agent.create_agent(to_dict)
+            
 
-        # print("User: {} agent {}".format(to_dict['user'], to_dict['agent']))
-        sql = 'insert into users (role, first_name, last_name, email) values (:role, :first_name, :last_name, :email) returning id'
+            # print("User: {} agent {}".format(to_dict['user'], to_dict['agent']))
+            sql = 'insert into users (role, first_name, last_name, email) values (:role, :first_name, :last_name, :email) returning id'
+            
+            result = self.query._insert(query=sql, params=to_dict['user'])
         
-        result = self.query._insert(query=sql, params=to_dict['user'])
-       
-        # print(f"result: {user_id}")
-        to_dict['agent']['id'] = result
-        sql_agent = f'insert into agents_profile (id, job_title, agency_id, contact_info) values (:id, :job_title, :agency_id, :contact_info)'
-        # print(f"result: {sql_agent}")
-        
-        self.query._insert(query=sql_agent, params=to_dict['agent'])
-        
-        print("\n" + "="*80)
-        print(" " * 20 + "🎉 CONGRATULATIONS! YOU ARE NOW AN AGENT! 🎉")
-        print("="*80)
-        print("\n  Your agent account has been successfully created!\n")
-        print("="*80 + "\n")
+            # print(f"result: {user_id}")
+            to_dict['agent']['id'] = result
+            sql_agent = f'insert into agents_profile (id, job_title, agency_id, contact_info) values (:id, :job_title, :agency_id, :contact_info)'
+            # print(f"result: {sql_agent}")
+            
+            self.query._insert(query=sql_agent, params=to_dict['agent'])
+            
+            print("\n" + "="*80)
+            print(" " * 20 + "🎉 CONGRATULATIONS! YOU ARE NOW AN AGENT! 🎉")
+            print("="*80)
+            print("\n  Your agent account has been successfully created!\n")
+            print("="*80 + "\n")
 
-        return email
+            return email
+        except Exception as e:
+            print(f"Error at {e}")
+            raise
     def signin(self):
         print("\n" + "="*80)
         print(" " * 30 + "🔐 AGENT SIGN IN 🔐")
         print("="*80 + "\n")
-        email = input("  📧 Email: ") or 'admintest@gmail.com'
+        email = input("  📧 Email: ").strip() or 'admintest@gmail.com'
         # password = input("password: ")
         
         select_sql = 'select *, a.agency_id from users join agents_profile a on a.id = users.id where email = :email'
@@ -138,6 +152,7 @@ class Agent:
     def view_bookings(self, agent_id):
         """View all bookings for renters assigned to this agent."""
         try:
+            print(agent_id)
             select_sql = """
                 SELECT b.id AS booking_id, 
                     u.first_name || ' ' || u.last_name AS renter_name,
@@ -473,7 +488,7 @@ class Agent:
                 case 'p':
                     properties.Properties(db=self.db,db_gen=self.db_gen, agency_id = agency_id, agent_id = agent_id).cli(role)
                 case 'b':
-                    self.manage_bookings(agency_id)
+                    self.manage_bookings(agent_id=agent_id)
                 case 'c':
                     self.manage_clients(agent_id)
                 case _:

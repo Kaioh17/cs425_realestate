@@ -77,7 +77,6 @@ class query_:
             raise
         finally:      
             if not no_commit:
-                print("Commit made!!!!")
                 self.db.commit()         
             return result
     def _delete_by(self, query: str=None, 
@@ -195,7 +194,7 @@ class _Validators:
             raise ValueError('Param is needed to filter search')
     # def _is_exist(db, query, param):
         
-                 
+                
         
 class _Display:
     
