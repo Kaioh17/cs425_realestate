@@ -135,6 +135,7 @@ class Agent:
             match ans:
                 case 'y':
                     self.create_agent()
+                    return self.signin()
                 case 'n':
                     return
                 case _:
