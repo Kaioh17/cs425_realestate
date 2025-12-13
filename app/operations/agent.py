@@ -262,7 +262,168 @@ class Agent:
             print(f'Error: {e}')
             raise e
         
-        
+    def view_clients(self, agent_id):
+        """View summary of all clients assigned to this agent."""
+        try:
+            select_sql = """
+                SELECT u.id AS client_id,
+                    u.first_name || ' ' || u.last_name AS client_name,
+                    u.email,
+                    rp.preferred_location,
+                    rp.budget,
+                    COUNT(b.id) AS total_bookings
+                FROM agent_assigned aa
+                JOIN users u ON aa.renter_id = u.id
+                JOIN renters_profile rp ON u.id = rp.id
+                LEFT JOIN bookings b ON u.id = b.renter_id
+                WHERE aa.agent_id = :agent_id
+                GROUP BY u.id, u.first_name, u.last_name, u.email, rp.preferred_location, rp.budget
+                ORDER BY u.last_name, u.first_name
+            """
+            result = self.query.select_all(query=select_sql, param={"agent_id": agent_id})
+            
+            print("\n" + "="*80)
+            print(" " * 30 + " YOUR CLIENTS ")
+            print("="*80)
+            
+            if len(result) == 0:
+                print("\n  You have no clients assigned to you yet.\n")
+                return None
+            
+            df = pd.DataFrame(result)
+            print()
+            helper_service._Display.pretty_df(df=df, showindex=False)
+            print()
+            return result
+            
+        except Exception as e:
+            print(f'Error: {e}')
+            raise e
+
+    def view_client_details(self, agent_id, client_id):
+        """View detailed information for a specific client."""
+        try:
+            # Get client basic info
+            client_sql = """
+                SELECT u.id, u.first_name, u.last_name, u.email,
+                    rp.move_in_date, rp.preferred_location, rp.budget
+                FROM users u
+                JOIN renters_profile rp ON u.id = rp.id
+                JOIN agent_assigned aa ON u.id = aa.renter_id
+                WHERE u.id = :client_id AND aa.agent_id = :agent_id
+            """
+            client = self.query.select_all(query=client_sql, param={"client_id": client_id, "agent_id": agent_id})
+            
+            if len(client) == 0:
+                print("\n  Client not found or not assigned to you.\n")
+                return
+            
+            client = client[0]
+            
+            print("\n" + "="*80)
+            print(f" " * 25 + f" {client['first_name']} {client['last_name']} ")
+            print("="*80)
+            
+            # Basic info
+            print(f"\n   Email: {client['email']}")
+            print(f"   Preferred Location: {client['preferred_location']}")
+            print(f"   Budget: ${client['budget']:,.2f}")
+            print(f"   Move-in Date: {client['move_in_date']}")
+            
+            # Get addresses
+            address_sql = """
+                SELECT street, city, state, zip
+                FROM renter_addresses
+                WHERE renter_id = :client_id
+            """
+            addresses = self.query.select_all(query=address_sql, param={"client_id": client_id})
+            
+            print("\n  " + "-"*40)
+            print("   ADDRESSES")
+            print("  " + "-"*40)
+            if len(addresses) == 0:
+                print("    No addresses on file.")
+            else:
+                for addr in addresses:
+                    print(f"    {addr['street']}, {addr['city']}, {addr['state']} {addr['zip']}")
+            
+            # Get cards (last 4 digits only)
+            card_sql = """
+                SELECT card_type, RIGHT(card_number, 4) AS last_four, 
+                    expiration_month, expiration_year
+                FROM credit_cards
+                WHERE renter_id = :client_id
+            """
+            cards = self.query.select_all(query=card_sql, param={"client_id": client_id})
+            
+            print("\n  " + "-"*40)
+            print("  PAYMENT METHODS")
+            print("  " + "-"*40)
+            if len(cards) == 0:
+                print("    No cards on file.")
+            else:
+                for card in cards:
+                    print(f"    {card['card_type'].capitalize()} ending in {card['last_four']} (Exp: {card['expiration_month']}/{card['expiration_year']})")
+            
+            # Get bookings
+            booking_sql = """
+                SELECT b.id AS booking_id, p.description, p.city,
+                    b.start_date, b.end_date, b.price, b.booking_status
+                FROM bookings b
+                JOIN properties p ON b.property_id = p.id
+                WHERE b.renter_id = :client_id
+                ORDER BY b.start_date DESC
+            """
+            bookings = self.query.select_all(query=booking_sql, param={"client_id": client_id})
+            
+            print("\n  " + "-"*40)
+            print(" BOOKINGS")
+            print("  " + "-"*40)
+            if len(bookings) == 0:
+                print("    No bookings yet.")
+            else:
+                df = pd.DataFrame(bookings)
+                print()
+                helper_service._Display.pretty_df(df=df, showindex=False)
+            
+            print()
+            
+        except Exception as e:
+            print(f'Error: {e}')
+            raise e
+
+    def manage_clients(self, agent_id):
+        """Client management menu for agents."""
+        try:
+            while True:
+                # Show client summary
+                result = self.view_clients(agent_id)
+                
+                if result is None:
+                    return
+                
+                print("-"*80)
+                client_id = input("\n  Enter Client ID to view details (or press ENTER to go back): ").strip()
+                
+                if not client_id:
+                    print("\n  Returning to main menu...\n")
+                    break
+                
+                # Validate client ID
+                valid_ids = [str(c['client_id']) for c in result]
+                if client_id not in valid_ids:
+                    print("\n  Invalid Client ID. Please try again.\n")
+                    continue
+                
+                # Show client details
+                self.view_client_details(agent_id, int(client_id))
+                
+                input("  Press ENTER to continue...")
+                        
+        except Exception as e:
+            print(f'Error: {e}')
+            raise e
+            
     def cli(self):
         token_created = None
         while token_created is None:
@@ -298,7 +459,7 @@ class Agent:
             print("\n  What would you like to do today?\n")
             print("    [b] See all bookings")
             print("    [p] Manage properties")
-            print("    [c] See clients")
+            print("    [c] Manage clients")
             print("    [q] Quit")
             print()
             status = input("  Enter your choice: ").lower().strip()
@@ -313,6 +474,8 @@ class Agent:
                     properties.Properties(db=self.db,db_gen=self.db_gen, agency_id = agency_id, agent_id = agent_id).cli(role)
                 case 'b':
                     self.manage_bookings(agency_id)
+                case 'c':
+                    self.manage_clients(agent_id)
                 case _:
                     print("\n  Exiting...\n")
                     break
